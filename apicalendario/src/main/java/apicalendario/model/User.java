@@ -51,4 +51,8 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime fechaRegistro = LocalDateTime.now();
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean activo = true;
+
 }
