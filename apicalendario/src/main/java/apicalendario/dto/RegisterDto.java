@@ -1,5 +1,6 @@
 package apicalendario.dto;
 
+import apicalendario.exception.validation.EmailDominioValido;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -14,6 +15,7 @@ public class RegisterDto {
 
     @Email
     @NotBlank(message = "El email no puede quedar en blanco")
+    @EmailDominioValido
     private String email;
 
     @NotBlank(message = "El campo nombre no puede quedar vacio")

@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import apicalendario.dto.ActualizarPerfilDto;
 import apicalendario.dto.LoginDto;
 import apicalendario.dto.LoginResponseDto;
 import apicalendario.dto.RegisterDto;
@@ -81,5 +82,18 @@ public class UsuarioService {
         repositorio.save(usuario);
         tokenblack.agregarToken(token);
         return "cuenta eliminada correctamente";
+    }
+
+    public String ModificarUsuario(String email, ActualizarPerfilDto actualizar) {
+        User usuario = repositorio.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+        String passwordE = passwordEncoder.encode(actualizar.getPassword());
+        usuario.setNombre(actualizar.getNombre());
+        usuario.setApellido(actualizar.getApellido());
+        usuario.setPassword(passwordE);
+
+        repositorio.save(usuario);
+
+        return "usuario modificado de manera exitosa";
     }
 }
