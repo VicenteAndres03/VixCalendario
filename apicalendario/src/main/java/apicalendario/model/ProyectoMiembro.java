@@ -27,4 +27,12 @@ public class ProyectoMiembro {
     @Column(nullable = false)
     @Builder.Default
     private RolProyecto rol = RolProyecto.MIEMBRO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private EstadoInvitacion estado = EstadoInvitacion.PENDIENTE; // Por defecto será PENDIENTE
+
+    @Column(unique = true, nullable = true)
+    private String tokenInvitacion;
 }

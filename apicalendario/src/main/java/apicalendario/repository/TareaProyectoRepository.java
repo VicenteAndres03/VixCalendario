@@ -12,4 +12,6 @@ public interface TareaProyectoRepository extends JpaRepository<TareaProyecto, Lo
     List<TareaProyecto> findByProyecto(Proyecto proyecto);
 
     List<TareaProyecto> findByAsignadoA(User usuario);
+
+    void deleteByProyecto(Proyecto proyecto);
 }

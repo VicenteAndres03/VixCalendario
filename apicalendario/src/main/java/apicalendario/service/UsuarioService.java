@@ -27,6 +27,7 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenBlacklistService tokenblack;
+    private final EmailService emailService;
 
     public String registrarUsuario(RegisterDto registro) {
         Optional<User> usuarioExistente = repositorio.findByEmail(registro.getEmail());
@@ -41,6 +42,10 @@ public class UsuarioService {
                 verifi.setEstadoSuscripcion(EstadoSuscripcion.INACTIVO);
                 verifi.setRol(Rol.USER);
                 repositorio.save(verifi);
+
+                // Envío de correo al reactivar cuenta
+                emailService.enviarCorreoBienvenida(registro.getEmail(), registro.getNombre());
+
                 return "El usuario eliminado fue nuevamente registrado de manera correcta";
             } else {
                 return "el usuario ya esta registrado";
@@ -58,6 +63,10 @@ public class UsuarioService {
                     .activo(true)
                     .build();
             repositorio.save(usuario);
+
+            // Envío de correo para un nuevo registro exitoso
+            emailService.enviarCorreoBienvenida(registro.getEmail(), registro.getNombre());
+
             return "El usuario se registro de una manera correcta";
         }
     }

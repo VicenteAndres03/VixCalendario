@@ -34,4 +34,23 @@ public class ProyectoController {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return service.obtenerMisProyectos(email);
     }
+
+    // --- NUEVOS ENDPOINTS ---
+
+    @DeleteMapping("/eliminar/{proyectoId}")
+    public String eliminarProyecto(@PathVariable Long proyectoId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return service.eliminarProyecto(proyectoId, email);
+    }
+
+    @GetMapping("/progreso/{proyectoId}")
+    public int obtenerProgreso(@PathVariable Long proyectoId) {
+        return service.obtenerProgreso(proyectoId);
+    }
+
+    @PostMapping("/aceptar-invitacion/{token}")
+    public String aceptarInvitacion(@PathVariable String token) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return service.aceptarInvitacion(token, email);
+    }
 }

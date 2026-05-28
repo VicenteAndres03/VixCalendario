@@ -33,9 +33,17 @@ function Login(){
             <div className="absolute w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl top-0 left-0"></div>
             <div className="absolute w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl bottom-0 right-0"></div>
 
+            {/* NUEVO BOTÓN: Volver al inicio (Arriba a la izquierda) */}
+            <button
+                onClick={() => navigate("/")}
+                className="absolute top-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm transition-all duration-300 flex items-center gap-2 shadow-lg"
+            >
+                <span>←</span> Volver al inicio
+            </button>
+
             <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="absolute top-4 right-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm transition-all duration-300"
+                className="absolute top-4 right-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm transition-all duration-300 shadow-lg"
             >
                 {darkMode ? "☀️ Modo Claro" : "🌙 Modo Oscuro"}
             </button>

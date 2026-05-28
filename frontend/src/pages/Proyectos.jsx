@@ -28,10 +28,27 @@ function Proyectos() {
 
     const cargarProyectos = async () => {
         try {
+            // 1. Obtenemos los proyectos
             const response = await axios.get("http://localhost:8080/api/proyectos/mis", {
                 headers: { Authorization: `Bearer ${token}` }
             })
-            setProyectos(response.data)
+            const proyectosData = response.data;
+
+            // 2. Obtenemos el progreso para cada proyecto
+            const proyectosConProgreso = await Promise.all(
+                proyectosData.map(async (proy) => {
+                    try {
+                        const resProgreso = await axios.get(`http://localhost:8080/api/proyectos/progreso/${proy.proyecto.id}`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        return { ...proy, progreso: resProgreso.data };
+                    } catch (error) {
+                        return { ...proy, progreso: 0 };
+                    }
+                })
+            );
+
+            setProyectos(proyectosConProgreso)
         } catch (error) {
             console.error("Error al cargar proyectos:", error)
         } finally {
@@ -78,6 +95,21 @@ function Proyectos() {
             setEmailInvitado("")
         } catch (error) {
             setMensaje({ tipo: "error", texto: error.response?.data?.mensaje || "Error al invitar" })
+        }
+    }
+
+    // --- NUEVA FUNCIÓN PARA ELIMINAR ---
+    const eliminarProyecto = async (proyectoId) => {
+        if (!window.confirm("¿Estás seguro de que deseas eliminar este proyecto de forma permanente?")) return;
+        
+        try {
+            await axios.delete(`http://localhost:8080/api/proyectos/eliminar/${proyectoId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            setMensaje({ tipo: "exito", texto: "Proyecto eliminado exitosamente" })
+            cargarProyectos() // Recargamos para actualizar la lista
+        } catch (error) {
+            setMensaje({ tipo: "error", texto: error.response?.data?.mensaje || "Error al eliminar el proyecto" })
         }
     }
 
@@ -156,45 +188,79 @@ function Proyectos() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
                                 whileHover={{ scale: 1.02 }}
-                                className={`bg-gradient-to-b ${colores[index % colores.length]} border rounded-2xl p-6`}
+                                className={`bg-gradient-to-b ${colores[index % colores.length]} border rounded-2xl p-6 flex flex-col justify-between`}
                             >
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="w-10 h-10 bg-cyan-500/20 rounded-xl flex items-center justify-center text-xl">
-                                        🚀
+                                <div>
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="w-10 h-10 bg-cyan-500/20 rounded-xl flex items-center justify-center text-xl">
+                                            🚀
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs px-2 py-1 rounded-full ${
+                                                proy.rol === "ADMIN"
+                                                    ? "bg-cyan-500/20 text-cyan-400"
+                                                    : "bg-gray-500/20 text-gray-400"
+                                            }`}>
+                                                {proy.rol === "ADMIN" ? "Admin" : "Miembro"}
+                                            </span>
+                                            {/* Botón de eliminar (solo visible para ADMIN) */}
+                                            {proy.rol === "ADMIN" && (
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        eliminarProyecto(proy.proyecto.id);
+                                                    }}
+                                                    className="text-red-500/70 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors"
+                                                    title="Eliminar proyecto"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                        proy.rol === "ADMIN"
-                                            ? "bg-cyan-500/20 text-cyan-400"
-                                            : "bg-gray-500/20 text-gray-400"
-                                    }`}>
-                                        {proy.rol === "ADMIN" ? "Admin" : "Miembro"}
-                                    </span>
+
+                                    <h3 className="font-bold text-lg mb-2 text-white">
+                                        {proy.proyecto?.nombre}
+                                    </h3>
+                                    <p className="text-gray-400 text-sm mb-6">
+                                        {proy.proyecto?.descripcion || "Sin descripción"}
+                                    </p>
                                 </div>
 
-                                <h3 className="font-bold text-lg mb-2 text-white">
-                                    {proy.proyecto?.nombre}
-                                </h3>
-                                <p className="text-gray-400 text-sm mb-4">
-                                    {proy.proyecto?.descripcion || "Sin descripción"}
-                                </p>
+                                <div>
+                                    {/* Barra de Progreso */}
+                                    <div className="mb-5">
+                                        <div className="flex justify-between text-xs text-gray-400 mb-1 font-medium">
+                                            <span>Progreso del proyecto</span>
+                                            <span>{proy.progreso || 0}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-800/60 rounded-full h-1.5">
+                                            <div
+                                                className="bg-cyan-400 h-1.5 rounded-full transition-all duration-1000 ease-out"
+                                                style={{ width: `${proy.progreso || 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
 
-                                <div className="flex gap-2">
-                                    <motion.button
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => {
-                                            setProyectoSeleccionado(proy)
-                                            setMostrarInvitar(true)
-                                        }}
-                                        className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium py-2 rounded-xl transition-all"
-                                    >
-                                        👥 Invitar
-                                    </motion.button>
-                                    <motion.button
-                                        whileTap={{ scale: 0.95 }}
-                                        className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-medium py-2 rounded-xl transition-all"
-                                    >
-                                        📋 Ver Tablero
-                                    </motion.button>
+                                    <div className="flex gap-2">
+                                        <motion.button
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => {
+                                                setProyectoSeleccionado(proy)
+                                                setMostrarInvitar(true)
+                                            }}
+                                            className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium py-2 rounded-xl transition-all"
+                                        >
+                                            👥 Invitar
+                                        </motion.button>
+                                        <motion.button
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => navigate(`/tablero/${proy.proyecto.id}`)}
+                                            className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-medium py-2 rounded-xl transition-all"
+                                        >
+                                            📋 Ver Tablero
+                                        </motion.button>
+                                    </div>
                                 </div>
                             </motion.div>
                         ))}
@@ -202,7 +268,7 @@ function Proyectos() {
                 )}
             </div>
 
-            {/* Modal Nuevo Proyecto */}
+            {/* Modales (Nuevo Proyecto e Invitar Amigo) se mantienen exactamente igual que tu código original... */}
             <AnimatePresence>
                 {mostrarModal && (
                     <motion.div

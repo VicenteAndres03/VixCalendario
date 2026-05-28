@@ -1,8 +1,8 @@
-import { useState, useContext } from "react"
+import { useState, useContext, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Navbar from "../components/Navbar"
-import axios from "axios"
 import { ThemeContext } from "../context/ThemeContext"
+import { actualizarPerfil, eliminarCuenta } from "../services/authService"
 
 function Perfil() {
     const { darkMode } = useContext(ThemeContext)
@@ -18,6 +18,10 @@ function Perfil() {
     
     const [mensaje, setMensaje] = useState({ tipo: "", texto: "" })
     const [cargando, setCargando] = useState(false)
+
+    useEffect(() => {
+        // Carga inicial si es necesaria
+    }, [])
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -39,111 +43,136 @@ function Perfil() {
 
         setCargando(true)
         try {
-            await axios.put("http://localhost:8080/api/usuarios/modificar", formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
+            // Utilizamos la función de tu authService
+            await actualizarPerfil({
+                nombre: formData.nombre,
+                apellido: formData.apellido,
+                password: formData.password
+            }, emailGuardado, token)
             
-            setMensaje({ tipo: "exito", texto: "¡Perfil actualizado con éxito!" })
-            
-            // Actualizamos el nombre en el LocalStorage para que el Navbar cambie automáticamente
             localStorage.setItem("nombre", formData.nombre)
-            
-            // Limpiamos el campo de la contraseña por seguridad
-            setFormData({ ...formData, password: "" })
-            
+            setMensaje({ tipo: "exito", texto: "¡Perfil modificado de manera exitosa!" })
         } catch (error) {
             setMensaje({ 
                 tipo: "error", 
-                texto: error.response?.data?.mensaje || "Ocurrió un error al actualizar el perfil." 
+                texto: error.response?.data?.mensaje || "Hubo un problema al actualizar el perfil." 
             })
         } finally {
             setCargando(false)
         }
     }
 
+    const handleEliminarCuenta = async () => {
+        const confirmacion = window.confirm(
+            "¿Estás completamente seguro de que deseas eliminar tu cuenta? Esta acción desactivará tu acceso y cerrará la sesión actual."
+        )
+
+        if (confirmacion) {
+            setCargando(true)
+            setMensaje({ tipo: "", texto: "" })
+            try {
+                // Utilizamos la función de tu authService
+                await eliminarCuenta(emailGuardado, token)
+
+                localStorage.removeItem("token")
+                localStorage.removeItem("nombre")
+                localStorage.removeItem("email")
+
+                alert("Tu cuenta ha sido eliminada correctamente.")
+                window.location.href = "/"
+            } catch (error) {
+                setMensaje({ 
+                    tipo: "error", 
+                    texto: error.response?.data?.mensaje || "No se pudo eliminar la cuenta de manera correcta." 
+                })
+                setCargando(false)
+            }
+        }
+    }
+
     return (
-        <div className={`${darkMode ? "bg-gray-950 text-white" : "bg-gray-50 text-gray-900"} min-h-screen transition-colors duration-300`}>
+        <div className={`min-h-screen transition-colors duration-300 ${darkMode ? "bg-gray-950 text-white" : "bg-gray-50 text-gray-900"}`}>
             <Navbar />
-
-            {/* Efectos de fondo en modo oscuro */}
-            {darkMode && (
-                <>
-                    <div className="fixed w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl top-0 left-0 pointer-events-none"></div>
-                    <div className="fixed w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl bottom-0 right-0 pointer-events-none"></div>
-                </>
-            )}
-
-            <div className="flex items-center justify-center p-6 min-h-[calc(100vh-80px)]">
-                <motion.div 
+            
+            <div className="max-w-md mx-auto pt-28 px-4 pb-12">
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`w-full max-w-lg p-8 rounded-3xl shadow-xl transition-all relative z-10 ${
-                        darkMode ? "bg-gray-900/80 backdrop-blur-xl border border-cyan-500/20" : "bg-white border border-gray-200"
+                    className={`p-8 rounded-2xl border ${
+                        darkMode 
+                            ? "bg-gray-900/40 border-gray-800/80 backdrop-blur-md" 
+                            : "bg-white border-gray-200 shadow-xl"
                     }`}
                 >
-                    <div className="text-center mb-8">
-                        <div className="w-20 h-20 mx-auto bg-gradient-to-tr from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-3xl font-bold text-white mb-4 shadow-lg shadow-cyan-500/30">
-                            {formData.nombre?.charAt(0).toUpperCase() || "?"}
-                        </div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                            Mi Perfil
-                        </h2>
-                        <p className={`mt-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                            {emailGuardado}
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium mb-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                    Nombre
-                                </label>
-                                <input
-                                    type="text"
-                                    name="nombre"
-                                    value={formData.nombre}
-                                    onChange={handleChange}
-                                    className={`w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all ${
-                                        darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                                    }`}
-                                    placeholder="Tu nombre"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium mb-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                    Apellido
-                                </label>
-                                <input
-                                    type="text"
-                                    name="apellido"
-                                    value={formData.apellido}
-                                    onChange={handleChange}
-                                    className={`w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all ${
-                                        darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                                    }`}
-                                    placeholder="Tu apellido"
-                                />
-                            </div>
+                    <h1 className="text-2xl font-bold mb-6 text-center tracking-tight">Configuración de Perfil</h1>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                Nombre
+                            </label>
+                            <input
+                                type="text"
+                                name="nombre"
+                                value={formData.nombre}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium transition-all outline-none ${
+                                    darkMode 
+                                        ? "bg-gray-950/50 border-gray-800 focus:border-cyan-500 text-white" 
+                                        : "bg-gray-50 border-gray-200 focus:border-cyan-500 text-gray-900"
+                                }`}
+                            />
                         </div>
 
                         <div>
-                            <label className={`block text-sm font-medium mb-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                Confirmar Contraseña
+                            <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                Apellido
+                            </label>
+                            <input
+                                type="text"
+                                name="apellido"
+                                value={formData.apellido}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium transition-all outline-none ${
+                                    darkMode 
+                                        ? "bg-gray-950/50 border-gray-800 focus:border-cyan-500 text-white" 
+                                        : "bg-gray-50 border-gray-200 focus:border-cyan-500 text-gray-900"
+                                }`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                Correo Electrónico
+                            </label>
+                            <input
+                                type="email"
+                                value={emailGuardado}
+                                disabled
+                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium opacity-60 cursor-not-allowed ${
+                                    darkMode 
+                                        ? "bg-gray-950/30 border-gray-800 text-gray-400" 
+                                        : "bg-gray-100 border-gray-200 text-gray-500"
+                                }`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                Nueva Contraseña
                             </label>
                             <input
                                 type="password"
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                className={`w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all ${
-                                    darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium transition-all outline-none ${
+                                    darkMode 
+                                        ? "bg-gray-950/50 border-gray-800 focus:border-cyan-500 text-white" 
+                                        : "bg-gray-50 border-gray-200 focus:border-cyan-500 text-gray-900"
                                 }`}
                                 placeholder="Mínimo 8 caracteres"
                             />
-                            <p className={`text-xs mt-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                                * Por seguridad, ingresa tu contraseña actual o una nueva para guardar los cambios.
-                            </p>
                         </div>
 
                         <AnimatePresence>
@@ -173,10 +202,27 @@ function Perfil() {
                             {cargando ? "Guardando..." : "Actualizar Perfil"}
                         </motion.button>
                     </form>
+
+                    {/* Zona de Peligro */}
+                    <div className="mt-8 pt-6 border-t border-gray-800/40">
+                        <h3 className="text-sm font-bold text-red-500 uppercase tracking-wider mb-1">Zona de Peligro</h3>
+                        <p className={`text-xs mb-4 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                            Al confirmar, tu cuenta quedará inactiva y se agregará tu token a la lista de bloqueo.
+                        </p>
+                        <motion.button
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            onClick={handleEliminarCuenta}
+                            disabled={cargando}
+                            className="w-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-gray-950 font-semibold py-2.5 rounded-xl border border-red-500/20 transition-all text-sm disabled:opacity-50"
+                        >
+                            Eliminar mi cuenta
+                        </motion.button>
+                    </div>
                 </motion.div>
             </div>
         </div>
     )
 }
 
-export default Perfil
+export default Perfil;
