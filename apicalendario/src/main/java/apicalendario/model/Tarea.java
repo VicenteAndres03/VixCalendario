@@ -55,4 +55,7 @@ public class Tarea {
     @JoinColumn(name = "usuario_id", nullable = false)
     private User usuario;
 
+    @Column(columnDefinition = "TEXT", nullable = true)
+    private String historialEstados;
+
 }

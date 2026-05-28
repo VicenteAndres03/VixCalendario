@@ -41,9 +41,11 @@ public class TareaController {
         return service.TareadelDia(email, fecha);
     }
 
-    @PatchMapping("/{id}/estado")
-    public String cambiarEstado(@PathVariable Long id, @RequestParam Estado nuevoEstado) {
-        return service.cambiarEstado(id, nuevoEstado);
+    // NUEVO ENDPOINT PARA LAS FIGURITAS DEL CALENDARIO
+    @GetMapping("/todas")
+    public List<Tarea> obtenerTodasLasTareas() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return service.obtenerTodasLasTareas(email);
     }
 
     @DeleteMapping("/{id}")
@@ -54,5 +56,11 @@ public class TareaController {
     @PutMapping("/{id}")
     public String actualizarTarea(@PathVariable Long id, @Valid @RequestBody TareaDto tarea) {
         return service.actualizarTarea(id, tarea);
+    }
+
+    @PatchMapping("/{id}/estado")
+    public String cambiarEstado(@PathVariable Long id, @RequestParam Estado nuevoEstado,
+            @RequestParam(required = false) LocalDate fecha) {
+        return service.cambiarEstado(id, nuevoEstado, fecha);
     }
 }

@@ -14,4 +14,6 @@ public interface TareaRepository extends JpaRepository<Tarea, Long> {
 
     List<Tarea> findByUsuarioAndFechaInicioBetween(User usuario, LocalDateTime inicio, LocalDateTime fin);
 
+    List<Tarea> findByUsuarioEmail(String email);
+
 }
