@@ -155,4 +155,11 @@ public class ProyectoService {
                 // Regla de 3 simple para el porcentaje (completadas / totales * 100)
                 return (int) ((completadas * 100) / tareas.size());
         }
+
+        public List<ProyectoMiembro> obtenerMiembros(Long proyectoId) {
+                Proyecto proyecto = repositorio.findById(proyectoId)
+                                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+                return repositorioMiembro.findByProyecto(proyecto);
+        }
+
 }

@@ -255,7 +255,7 @@ function Proyectos() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
-                                            onClick={() => navigate(`/tablero/${proy.proyecto.id}`)}
+                                            onClick={() => navigate(`/tablero/${proy.proyecto.id}/tablero`)}
                                             className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-medium py-2 rounded-xl transition-all"
                                         >
                                             📋 Ver Tablero
