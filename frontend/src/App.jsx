@@ -9,12 +9,12 @@ import Amigos from "./pages/Amigos"
 import Proyectos from "./pages/Proyectos"
 import TableroProyecto from "./pages/TableroProyecto"
 import AceptarInvitacion from "./pages/AceptarInvitacion"
+import Metricas from "./pages/Metricas"
 
-// --- Importamos las páginas legales e informativas ---
 import Terminos from "./pages/Terminos"
 import Privacidad from "./pages/Privacidad"
 import Cookies from "./pages/Cookies"
-import Nosotros from "./pages/Nosotros" // <-- Importación de Nosotros
+import Nosotros from "./pages/Nosotros"
 
 import RutaProtegida from "./components/RutaProtegida"
 import Footer from "./components/Footer"
@@ -23,7 +23,6 @@ import AvisoLegal from "./components/AvisoLegal"
 function App() {
   return (
     <Router>
-      {/* Banner de cookies flotante */}
       <AvisoLegal />
 
       <div className="flex flex-col min-h-screen">
@@ -40,7 +39,7 @@ function App() {
             <Route path="/terminos" element={<Terminos />} />
             <Route path="/privacidad" element={<Privacidad />} />
             <Route path="/cookies" element={<Cookies />} />
-            <Route path="/nosotros" element={<Nosotros />} /> {/* <-- Ruta de Nosotros */}
+            <Route path="/nosotros" element={<Nosotros />} />
 
             {/* Rutas Protegidas */}
             <Route path="/calendario" element={<RutaProtegida><Calendario /></RutaProtegida>} />
@@ -50,10 +49,10 @@ function App() {
             <Route path="/proyectos" element={<RutaProtegida><Proyectos /></RutaProtegida>} />
             <Route path="/proyecto/:id/tablero" element={<RutaProtegida><TableroProyecto /></RutaProtegida>} />
             <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
+            <Route path="/metricas" element={<RutaProtegida><Metricas /></RutaProtegida>} />
           </Routes>
         </div>
 
-        {/* Footer global */}
         <Footer />
         
       </div>

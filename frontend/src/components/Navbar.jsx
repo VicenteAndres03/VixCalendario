@@ -23,6 +23,7 @@ function Navbar(){
         { nombre: "Tablero", ruta: "/tablero", emoji: "🗂️" },
         { nombre: "Amigos", ruta: "/amigos", emoji: "👥" },
         { nombre: "Proyectos", ruta: "/proyectos", emoji: "🚀" },
+        { nombre: "Métricas", ruta: "/metricas", emoji: "📊" },
     ]
 
     return (
@@ -123,7 +124,6 @@ function Navbar(){
                         exit={{ opacity: 0, height: 0 }}
                         className={`md:hidden mt-3 border-t pt-3 ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}
                     >
-                        {/* Enlace al perfil en versión móvil */}
                         <button
                             onClick={() => { navigate("/perfil"); setMenuAbierto(false) }}
                             className={`w-full flex items-center gap-2 px-4 py-3 rounded-xl transition-all ${

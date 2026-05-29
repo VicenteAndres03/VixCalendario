@@ -23,6 +23,7 @@ public class TareaService {
 
     private final TareaRepository repositorio;
     private final UsuarioRepository repositorioU;
+    private final MetricasService metricasService;
 
     public String RegistrarTarea(String email, TareaDto tarea) {
         User usuario = repositorioU.findByEmail(email)
@@ -124,6 +125,9 @@ public class TareaService {
         } else {
             // Si no es recurrente, simplemente cambiamos el estado original
             tarea.setEstado(nuevoEstado);
+        }
+        if (fecha != null) {
+            metricasService.actualizarRacha(tarea.getUsuario().getEmail(), fecha);
         }
 
         repositorio.save(tarea);

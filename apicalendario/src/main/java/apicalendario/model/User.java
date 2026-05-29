@@ -1,5 +1,6 @@
 package apicalendario.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -54,5 +55,21 @@ public class User {
     @Builder.Default
     @Column(nullable = false)
     private boolean activo = true;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private int rachaActual = 0;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private int mejorRacha = 0;
+
+    @Builder.Default
+    @Column(nullable = true)
+    private LocalDate ultimoDiaProductivo = null;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private int diasGratuitos = 0; // contador para los 100 días → mes gratis
 
 }
