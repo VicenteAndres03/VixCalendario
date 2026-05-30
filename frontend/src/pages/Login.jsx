@@ -13,20 +13,17 @@ function Login() {
 
     const handleLogin = async () => {
         try {
-            const datos = { email, password }
-            const respuesta = await login(datos)
-            localStorage.setItem("token", respuesta.token)
-            localStorage.setItem("nombre", respuesta.nombre)
-            localStorage.setItem("email", respuesta.email)
-            localStorage.setItem("rol", respuesta.rol)
-            
-            // 🔥 AQUÍ GUARDAMOS EL ESTADO DE SUSCRIPCIÓN PARA BLOQUEAR O PERMITIR FUNCIONES
-            localStorage.setItem("suscripcion", respuesta.estadoSuscripcion || "INACTIVO")
-            
-            navigate("/calendario")
-        } catch (err) {
-            setError(err.response?.data?.mensaje || "Credenciales incorrectas")
-        }
+        const datos = { email, password }
+        const respuesta = await login(datos)
+        localStorage.setItem("token", respuesta.token)
+        localStorage.setItem("nombre", respuesta.nombre)
+        localStorage.setItem("email", respuesta.email)
+        localStorage.setItem("rol", respuesta.rol)
+        localStorage.setItem("suscripcion", respuesta.estadoSuscripcion || "INACTIVO") // ← usa estadoSuscripcion
+        navigate("/calendario")
+    } catch (err) {
+        setError(err.response?.data?.mensaje || "Credenciales incorrectas")
+    }
     }
 
     const handleKeyDown = (e) => {

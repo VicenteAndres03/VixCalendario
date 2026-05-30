@@ -75,4 +75,17 @@ public class UsuarioController {
     public ResponseEntity<String> eliminarUsuario(@PathVariable Long id) {
         return ResponseEntity.ok(service.eliminarUsuario(id));
     }
+
+    @GetMapping("/perfil")
+    public ResponseEntity<LoginResponseDto> obtenerPerfil() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User usuario = service.obtenerPorEmail(email);
+        LoginResponseDto dto = new LoginResponseDto(
+                null,
+                usuario.getNombre(),
+                usuario.getEmail(),
+                usuario.getRol().name(),
+                usuario.getEstadoSuscripcion().name());
+        return ResponseEntity.ok(dto);
+    }
 }

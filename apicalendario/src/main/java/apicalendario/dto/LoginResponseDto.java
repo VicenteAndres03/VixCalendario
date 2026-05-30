@@ -13,5 +13,6 @@ public class LoginResponseDto {
     private String nombre;
     private String email;
     private String rol; // ← agregar este campo
+    private String estadoSuscripcion; // ← AGREGAR ESTE CAMPO
 
 }

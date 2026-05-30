@@ -25,6 +25,10 @@ function TableroProyecto() {
     const token = localStorage.getItem("token")
     const emailUsuario = localStorage.getItem("email")
 
+    // 🔒 VERIFICACIÓN PREMIUM
+    const suscripcion = localStorage.getItem("suscripcion") || "INACTIVO"
+    const esPremium = suscripcion === "ACTIVO"
+
     const [proyecto, setProyecto] = useState(null)
     const [miembros, setMiembros] = useState([])
     const [tareas, setTareas] = useState({
@@ -140,32 +144,30 @@ function TableroProyecto() {
     }
 
     const copiarLinkCliente = () => {
-        const tokenDemo = proyecto?.tokenPublico || `demo-proyecto-${id}`;
-        const url = `${window.location.origin}/shared/proyecto/${tokenDemo}`;
-        navigator.clipboard.writeText(url);
-        alert(`✅ ¡Enlace copiado al portapapeles!\n\nEnvíale este enlace a tu cliente:\n${url}`);
+        const tokenDemo = proyecto?.tokenPublico || `demo-proyecto-${id}`
+        const url = `${window.location.origin}/shared/proyecto/${tokenDemo}`
+        navigator.clipboard.writeText(url)
+        alert(`✅ ¡Enlace copiado al portapapeles!\n\nEnvíale este enlace a tu cliente:\n${url}`)
     }
 
-    // 🔥 NUEVA FUNCIÓN: Descargar PDF
     const descargarReporte = async () => {
         try {
             const res = await axios.get(`http://localhost:8080/api/reportes/proyecto/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
-                responseType: 'blob' // CRUCIAL: Le dice a Axios que recibirá un archivo binario
-            });
+                responseType: 'blob'
+            })
             
-            const url = window.URL.createObjectURL(new Blob([res.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `Reporte_${proyecto?.nombre || 'Proyecto'}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            
-            link.parentNode.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            const url = window.URL.createObjectURL(new Blob([res.data]))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `Reporte_${proyecto?.nombre || 'Proyecto'}.pdf`)
+            document.body.appendChild(link)
+            link.click()
+            link.parentNode.removeChild(link)
+            window.URL.revokeObjectURL(url)
         } catch (error) {
-            console.error("Error descargando el reporte:", error);
-            alert("Hubo un problema al generar el reporte PDF.");
+            console.error("Error descargando el reporte:", error)
+            alert("Hubo un problema al generar el reporte PDF.")
         }
     }
 
@@ -201,28 +203,58 @@ function TableroProyecto() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        
-                        {/* 🔥 NUEVO: Botón Descargar PDF */}
-                        <motion.button 
-                            whileHover={{ scale: 1.02 }} 
-                            onClick={descargarReporte} 
-                            className="px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all text-sm font-bold flex items-center gap-2"
-                        >
-                            <span>📄</span> Exportar PDF
-                        </motion.button>
 
-                        {/* Botón Link Cliente */}
-                        <motion.button 
-                            whileHover={{ scale: 1.02 }} 
-                            onClick={copiarLinkCliente} 
-                            className="px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white transition-all text-sm font-bold flex items-center gap-2"
-                        >
-                            <span>🔗</span> Link Cliente
-                        </motion.button>
+                        {/* 📄 Botón Exportar PDF — solo premium */}
+                        {esPremium ? (
+                            <motion.button 
+                                whileHover={{ scale: 1.02 }} 
+                                onClick={descargarReporte} 
+                                className="px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all text-sm font-bold flex items-center gap-2"
+                            >
+                                <span>📄</span> Exportar PDF
+                            </motion.button>
+                        ) : (
+                            <motion.button 
+                                whileHover={{ scale: 1.02 }} 
+                                onClick={() => navigate("/plan")}
+                                title="Función exclusiva Premium — haz clic para ver planes"
+                                className={`px-4 py-2 rounded-xl border border-dashed text-sm font-bold flex items-center gap-2 transition-all ${
+                                    darkMode 
+                                        ? "border-gray-700 bg-gray-900/50 text-gray-500 hover:border-gray-500 hover:text-gray-400" 
+                                        : "border-gray-300 bg-gray-50 text-gray-400 hover:border-gray-400"
+                                }`}
+                            >
+                                <span>🔒</span> Exportar PDF
+                            </motion.button>
+                        )}
+
+                        {/* 🔗 Botón Link Cliente — solo premium */}
+                        {esPremium ? (
+                            <motion.button 
+                                whileHover={{ scale: 1.02 }} 
+                                onClick={copiarLinkCliente} 
+                                className="px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white transition-all text-sm font-bold flex items-center gap-2"
+                            >
+                                <span>🔗</span> Link Cliente
+                            </motion.button>
+                        ) : (
+                            <motion.button 
+                                whileHover={{ scale: 1.02 }} 
+                                onClick={() => navigate("/plan")}
+                                title="Función exclusiva Premium — haz clic para ver planes"
+                                className={`px-4 py-2 rounded-xl border border-dashed text-sm font-bold flex items-center gap-2 transition-all ${
+                                    darkMode 
+                                        ? "border-gray-700 bg-gray-900/50 text-gray-500 hover:border-gray-500 hover:text-gray-400" 
+                                        : "border-gray-300 bg-gray-50 text-gray-400 hover:border-gray-400"
+                                }`}
+                            >
+                                <span>🔒</span> Link Cliente
+                            </motion.button>
+                        )}
                         
                         <div className="flex -space-x-2 border-l border-gray-700 pl-4">
                             {miembros.slice(0, 4).map((m, i) => {
-                                const nombre = m.usuario?.nombre || m.nombre || "?";
+                                const nombre = m.usuario?.nombre || m.nombre || "?"
                                 return (
                                     <div
                                         key={i}
@@ -242,7 +274,7 @@ function TableroProyecto() {
                     </div>
                 </div>
 
-                {/* FORMULARIO INTEGRADO */}
+                {/* FORMULARIO CREAR TAREA */}
                 <motion.form 
                     onSubmit={crearTarea}
                     className={`w-full mb-10 p-6 rounded-3xl border backdrop-blur-xl shadow-lg transition-all ${
@@ -272,7 +304,7 @@ function TableroProyecto() {
                                 <input 
                                     type="date" title="Fecha de inicio"
                                     value={nuevaTarea.fechaInicio} onChange={(e) => setNuevaTarea({...nuevaTarea, fechaInicio: e.target.value})} 
-                                    className={`bg-transparent font-bold outline-none cursor-pointer text-sm w-[110px]`} 
+                                    className="bg-transparent font-bold outline-none cursor-pointer text-sm w-[110px]"
                                     style={{ colorScheme: darkMode ? "dark" : "light" }}
                                     required 
                                 />
@@ -280,7 +312,7 @@ function TableroProyecto() {
                                 <input 
                                     type="date" title="Fecha Límite"
                                     value={nuevaTarea.fechaLimite} onChange={(e) => setNuevaTarea({...nuevaTarea, fechaLimite: e.target.value})} 
-                                    className={`bg-transparent font-bold outline-none cursor-pointer text-sm w-[110px]`}
+                                    className="bg-transparent font-bold outline-none cursor-pointer text-sm w-[110px]"
                                     style={{ colorScheme: darkMode ? "dark" : "light" }} 
                                     required 
                                 />
@@ -295,9 +327,8 @@ function TableroProyecto() {
                                 >
                                     <option value="" className={darkMode ? "bg-gray-900" : "bg-white"}>Sin asignar</option>
                                     {miembros.map((m) => {
-                                        const nombre = m.usuario?.nombre || m.nombre;
-                                        const email = m.usuario?.email || m.email;
-                                        
+                                        const nombre = m.usuario?.nombre || m.nombre
+                                        const email = m.usuario?.email || m.email
                                         return (
                                             <option key={m.id || email} value={email} className={darkMode ? "bg-gray-900" : "bg-white"}>
                                                 {nombre} {email === emailUsuario ? "(Tú)" : ""}

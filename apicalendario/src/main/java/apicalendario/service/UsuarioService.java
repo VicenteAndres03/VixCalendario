@@ -84,7 +84,8 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         if (passwordEncoder.matches(email.getPassword(), usuario.getPassword()) && usuario.isActivo()) {
             String token = jwtService.generarToken(usuario.getEmail());
-            return new LoginResponseDto(token, usuario.getNombre(), usuario.getEmail(), usuario.getRol().name());
+            return new LoginResponseDto(token, usuario.getNombre(), usuario.getEmail(), usuario.getRol().name(),
+                    usuario.getEstadoSuscripcion().name());
         } else if (passwordEncoder.matches(email.getPassword(), usuario.getPassword()) && !usuario.isActivo()) {
             throw new CuentaInactivaException("Este usuario ha sido eliminado");
         } else {
@@ -158,5 +159,10 @@ public class UsuarioService {
         repositorio.delete(usuario);
 
         return "Usuario y todos sus datos asociados fueron eliminados correctamente";
+    }
+
+    public User obtenerPorEmail(String email) {
+        return repositorio.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
     }
 }

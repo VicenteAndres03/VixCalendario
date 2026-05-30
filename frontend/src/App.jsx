@@ -25,7 +25,10 @@ import RutaPremium from "./components/RutaPremium" // Guardian para funciones de
 import Footer from "./components/Footer"
 import AvisoLegal from "./components/AvisoLegal"
 
+import { useSyncSuscripcion } from "./hooks/useSyncSuscripcion"
+
 function App() {
+  useSyncSuscripcion()
   return (
     <Router>
       <AvisoLegal />

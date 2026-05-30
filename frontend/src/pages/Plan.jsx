@@ -205,7 +205,7 @@ function Plan() {
                                     disabled={cargandoPago}
                                     className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20 hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                 >
-                                    {cargandoPago ? (
+                                    {cargandoPago ? ( 
                                         <>
                                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                             Conectando con Flow...
