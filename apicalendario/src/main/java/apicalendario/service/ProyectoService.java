@@ -146,8 +146,6 @@ public class ProyectoService {
                         return 0; // Si no hay tareas creadas, el progreso es 0%
                 }
 
-                // Cuentan las tareas completadas. (Si en tu Enum Estado es "HECHO", cámbialo
-                // aquí)
                 long completadas = tareas.stream()
                                 .filter(t -> t.getEstado() == Estado.TERMINADO)
                                 .count();
@@ -159,6 +157,14 @@ public class ProyectoService {
         public List<ProyectoMiembro> obtenerMiembros(Long proyectoId) {
                 Proyecto proyecto = repositorio.findById(proyectoId)
                                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+                return repositorioMiembro.findByProyecto(proyecto);
+        }
+
+        public List<ProyectoMiembro> obtenerMiembrosPorProyecto(Long proyectoId) {
+                Proyecto proyecto = repositorio.findById(proyectoId)
+                                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+
+                // 🔥 CORRECCIÓN: Ahora busca en el repositorio correcto (repositorioMiembro)
                 return repositorioMiembro.findByProyecto(proyecto);
         }
 

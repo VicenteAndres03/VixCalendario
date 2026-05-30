@@ -4,10 +4,16 @@ import { useNavigate, useLocation } from "react-router-dom"
 import logoVix from "../assets/Hero.png" 
 import { ThemeContext } from "../context/ThemeContext"
 
-function Navbar(){
+function Navbar() {
     const navigate = useNavigate()
     const location = useLocation()
     const nombre = localStorage.getItem("nombre")
+    const token = localStorage.getItem("token")
+    
+    // 🔥 VALIDACIÓN INFALIBLE: Atrapa "ADMIN", '"ADMIN"' (con comillas) o "ROLE_ADMIN"
+    const rolGuardado = localStorage.getItem("rol") || ""
+    const esAdmin = rolGuardado.toUpperCase().includes("ADMIN")
+    
     const [menuAbierto, setMenuAbierto] = useState(false)
     const { darkMode, setDarkMode } = useContext(ThemeContext)
 
@@ -15,135 +21,171 @@ function Navbar(){
         localStorage.removeItem("token")
         localStorage.removeItem("nombre")
         localStorage.removeItem("email")
+        localStorage.removeItem("rol")
         navigate("/login")
     }
 
     const links = [
         { nombre: "Calendario", ruta: "/calendario", emoji: "📅" },
         { nombre: "Tablero", ruta: "/tablero", emoji: "🗂️" },
+        { nombre: "Hábitos", ruta: "/habitos", emoji: "🌱" },
         { nombre: "Amigos", ruta: "/amigos", emoji: "👥" },
         { nombre: "Proyectos", ruta: "/proyectos", emoji: "🚀" },
         { nombre: "Métricas", ruta: "/metricas", emoji: "📊" },
+        { nombre: "Planes", ruta: "/plan", emoji: "💎" },
     ]
 
+    // Agrega de forma condicional el acceso al panel si es ADMIN
+    if (esAdmin) {
+        links.push({ nombre: "Admin", ruta: "/admin", emoji: "👑" })
+    }
+
+    // Navegación inteligente para el logo
+    const handleLogoClick = () => {
+        if (token) {
+            navigate("/calendario")
+        } else {
+            navigate("/")
+        }
+    }
+
     return (
-        <nav className={`${darkMode ? 'bg-gray-900/90 border-cyan-500/20' : 'bg-white/90 border-gray-200'} backdrop-blur-md border-b px-6 py-2 sticky top-0 z-50 overflow-visible transition-colors duration-300`}>
-            <div className="flex items-center justify-between max-w-7xl mx-auto h-16">
-
-                {/* Contenedor del Logo */}
-                <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="cursor-pointer relative w-fit h-full flex items-center"
-                    onClick={() => navigate("/calendario")}
-                >
-                    <motion.img
-                        src={logoVix}
-                        alt="Vix-Flow Logo"
-                        className="w-24 h-24 object-contain absolute top-1/2 -translate-y-1/2 left-2 select-none z-10"
-                        animate={{ rotate: [0, 3, -3, 0] }}
-                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                    <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent select-none pl-28 z-0 relative">
-                        Vix-Flow
-                    </span>
-                </motion.div>
-
-                {/* Links de escritorio */}
-                <div className="hidden md:flex items-center gap-1">
-                    {links.map((link) => (
-                        <motion.button
-                            key={link.ruta}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => navigate(link.ruta)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all duration-300
-                                ${location.pathname === link.ruta 
-                                    ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" 
-                                    : darkMode 
-                                        ? "text-gray-400 hover:text-white hover:bg-gray-800" 
-                                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"}`}
-                        >
-                            <span>{link.emoji}</span>
-                            {link.nombre}
-                        </motion.button>
-                    ))}
-                </div>
-
-                {/* Sección de Usuario */}
-                <div className="flex items-center gap-3">
-                    {/* Botón de cambio de modo Sol / Luna */}
-                    <button
-                        onClick={() => setDarkMode(!darkMode)}
-                        className={`px-3 py-2 rounded-xl text-sm transition-all duration-300 ${
-                            darkMode ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-                        }`}
-                        title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                    >
-                        {darkMode ? "☀️" : "🌙"}
-                    </button>
-
-                    {/* Botón del Perfil de Usuario */}
-                    <div 
-                        onClick={() => navigate("/perfil")}
-                        className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                            darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'
-                        }`}
-                        title="Ir a mi perfil"
-                    >
-                        <div className="w-7 h-7 bg-cyan-500/20 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 text-xs font-bold">
-                            {nombre?.charAt(0).toUpperCase()}
-                        </div>
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{nombre}</span>
+        <nav className={`w-full sticky top-0 z-50 border-b transition-colors duration-300 ${
+            darkMode ? 'bg-gray-900/90 border-cyan-500/20 text-white' : 'bg-white/90 border-gray-200 text-gray-900'
+        } backdrop-blur-md`}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                    
+                    {/* Logo e Identidad */}
+                    <div className="flex items-center gap-2 cursor-pointer shrink-0 mr-2" onClick={handleLogoClick}>
+                        <img src={logoVix} alt="Vix Logo" className="h-10 w-auto object-contain" />
+                        <span className="hidden sm:block font-bold text-xl tracking-wider bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                            Vix-Flow
+                        </span>
                     </div>
 
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={cerrarSesion}
-                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-3 py-2 rounded-xl text-sm transition-all duration-300"
-                    >
-                        Salir 👋
-                    </motion.button>
+                    {/* Menú de Navegación de Escritorio - MÁRGENES REDUCIDOS (gap-1 xl:gap-3) PARA QUE QUEPA TODO */}
+                    <div className="hidden lg:flex items-center justify-center flex-1 gap-1 xl:gap-3">
+                        {links.map((link) => {
+                            const isActive = location.pathname === link.ruta
+                            return (
+                                <button
+                                    key={link.ruta}
+                                    onClick={() => navigate(link.ruta)}
+                                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                                        isActive 
+                                            ? 'bg-cyan-500 text-gray-950 font-bold shadow-lg shadow-cyan-500/20' 
+                                            : darkMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span className="text-base">{link.emoji}</span>
+                                    <span>{link.nombre}</span>
+                                </button>
+                            )
+                        })}
+                    </div>
 
-                    {/* Botón menú móvil */}
-                    <button
-                        onClick={() => setMenuAbierto(!menuAbierto)}
-                        className={`md:hidden ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-                    >
-                        ☰
-                    </button>
+                    {/* Acciones de Perfil / Sistema en Escritorio */}
+                    <div className="hidden lg:flex items-center gap-2 ml-2 shrink-0">
+                        <button
+                            onClick={() => setDarkMode(!darkMode)}
+                            className={`p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-gray-800 text-yellow-400' : 'hover:bg-gray-100 text-purple-600'}`}
+                            title="Cambiar tema"
+                        >
+                            {darkMode ? "☀️" : "🌙"}
+                        </button>
+                        
+                        {nombre && (
+                            <button
+                                onClick={() => navigate("/perfil")}
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                                    location.pathname === "/perfil"
+                                        ? 'bg-purple-500 text-white font-bold'
+                                        : darkMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                                }`}
+                            >
+                                <span className="text-base">👤</span>
+                                <span className="max-w-[80px] xl:max-w-[120px] truncate">{nombre}</span>
+                            </button>
+                        )}
+
+                        <button
+                            onClick={cerrarSesion}
+                            className="px-3 py-2 rounded-xl text-sm font-medium bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                        >
+                            Salir
+                        </button>
+                    </div>
+
+                    {/* Bloque Móvil (Theme toggle + Hamburguesa) */}
+                    <div className="flex lg:hidden items-center gap-3">
+                        <button
+                            onClick={() => setDarkMode(!darkMode)}
+                            className={`p-2 rounded-xl ${darkMode ? 'text-yellow-400' : 'text-purple-600'}`}
+                        >
+                            {darkMode ? "☀️" : "🌙"}
+                        </button>
+                        <button
+                            onClick={() => setMenuAbierto(!menuAbierto)}
+                            className={`p-2 rounded-xl transition-all ${darkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
+                        >
+                            <span className="text-xl font-bold">{menuAbierto ? "❌" : "☰"}</span>
+                        </button>
+                    </div>
+
                 </div>
             </div>
 
-            {/* Desplegable móvil */}
+            {/* Menú Desplegable para Móviles / Tablets */}
             <AnimatePresence>
                 {menuAbierto && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className={`md:hidden mt-3 border-t pt-3 ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}
+                        transition={{ duration: 0.2 }}
+                        className="lg:hidden border-t bg-white dark:bg-gray-900 px-4 pt-4 pb-6 space-y-2 shadow-xl overflow-hidden border-gray-200 dark:border-gray-800"
                     >
-                        <button
-                            onClick={() => { navigate("/perfil"); setMenuAbierto(false) }}
-                            className={`w-full flex items-center gap-2 px-4 py-3 rounded-xl transition-all ${
-                                darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                            }`}
-                        >
-                            👤 Mi Perfil
-                        </button>
-                        
-                        {links.map((link) => (
+                        {links.map((link) => {
+                            const isActive = location.pathname === link.ruta
+                            return (
+                                <button
+                                    key={link.ruta}
+                                    onClick={() => { navigate(link.ruta); setMenuAbierto(false) }}
+                                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-all ${
+                                        isActive
+                                            ? 'bg-cyan-500 text-gray-950 font-bold'
+                                            : darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span className="text-xl">{link.emoji}</span>
+                                    <span>{link.nombre}</span>
+                                </button>
+                            )
+                        })}
+
+                        {nombre && (
                             <button
-                                key={link.ruta}
-                                onClick={() => { navigate(link.ruta); setMenuAbierto(false) }}
-                                className={`w-full flex items-center gap-2 px-4 py-3 rounded-xl transition-all ${
-                                    darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                                onClick={() => { navigate("/perfil"); setMenuAbierto(false) }}
+                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-all mt-2 ${
+                                    location.pathname === "/perfil"
+                                        ? 'bg-purple-500 text-white font-bold'
+                                        : darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                                 }`}
                             >
-                                {link.emoji} {link.nombre}
+                                <span className="text-xl">👤</span>
+                                <span>Mi Perfil ({nombre})</span>
                             </button>
-                        ))}
+                        )}
+
+                        <div className="pt-4 mt-2 border-t border-gray-200 dark:border-gray-800">
+                            <button
+                                onClick={cerrarSesion}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-base font-medium bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            >
+                                Cerrar Sesión 🚪
+                            </button>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

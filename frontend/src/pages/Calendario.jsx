@@ -9,6 +9,7 @@ function Calendario(){
     const [vista, setVista] = useState("mes")
     const [fechaActual, setFechaActual] = useState(new Date())
     const [todasLasTareas, setTodasLasTareas] = useState([])
+    const [rachaActual, setRachaActual] = useState(0)
     
     const { darkMode } = useContext(ThemeContext)
     const navigate = useNavigate()
@@ -41,8 +42,20 @@ function Calendario(){
         }
     }
 
+    const cargarMetricas = async () => {
+        try {
+            const res = await axios.get("http://localhost:8080/api/metricas/personales", {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            setRachaActual(res.data.rachaActual || 0)
+        } catch (error) {
+            console.error("Error cargando métricas:", error)
+        }
+    }
+
     useEffect(() => {
         cargarTodasLasTareas()
+        cargarMetricas()
     }, [])
 
     const getTareasParaDia = (diaObj) => {
@@ -114,39 +127,56 @@ function Calendario(){
     const tareasDeHoyVistaDia = getTareasParaDia(fechaActual)
 
     return (
-        <div className={`${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} min-h-screen transition-colors duration-300`}>
+        <div className={`${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} min-h-screen transition-colors duration-300 overflow-y-scroll`}>
             <Navbar />
 
-            <div className="p-6">
-                {/* Header Superior */}
-                <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-                    <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {vista === "mes" && `${meses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`}
-                        {vista === "semana" && `${getDiasSemana()[0].getDate()} - ${getDiasSemana()[6].getDate()} ${meses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`}
-                        {vista === "dia" && `${diasSemana[fechaActual.getDay()]}, ${fechaActual.getDate()} de ${meses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`}
-                    </h2>
-
-                    {/* Selector de Vista */}
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-gray-200'} rounded-xl p-1 flex transition-colors`}>
-                        {["mes","semana","dia"].map((v) => (
-                            <motion.button
-                                key={v}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setVista(v)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300
-                                    ${vista === v 
-                                        ? "bg-cyan-500 text-gray-950 font-bold" 
-                                        : darkMode ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
-                            >
-                                {v === "dia" ? "Día" : v.charAt(0).toUpperCase() + v.slice(1)}
-                            </motion.button>
-                        ))}
+            <div className="p-6 max-w-7xl mx-auto w-full">
+                
+                {/* Header Superior Fijo */}
+                <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6 min-h-[60px]">
+                    
+                    {/* Racha */}
+                    <div className="flex items-center gap-4 justify-start">
+                        <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}`}>
+                            <span className="text-xl">🔥</span>
+                            <span className="font-bold text-sm">{rachaActual} días</span>
+                        </div>
                     </div>
 
-                    {/* Botones de Navegación */}
-                    <div className="flex items-center gap-2">
+                    {/* Selector de Vista */}
+                    <div className="flex justify-center">
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-gray-200'} rounded-xl p-1 flex transition-colors w-max`}>
+                            {["mes","semana","dia"].map((v) => (
+                                <motion.button
+                                    key={v}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setVista(v)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300
+                                        ${vista === v 
+                                            ? "bg-cyan-500 text-gray-950 font-bold" 
+                                            : darkMode ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
+                                >
+                                    {v === "dia" ? "Día" : v.charAt(0).toUpperCase() + v.slice(1)}
+                                </motion.button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Botones de Navegación y Mes Dinámico */}
+                    <div className="flex items-center justify-end gap-2">
                         <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={navegarAnterior} className={`px-3 py-2 rounded-xl font-bold ${darkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-100'}`}>‹</motion.button>
-                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => setFechaActual(new Date())} className={`px-4 py-2 rounded-xl text-sm font-medium ${darkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-100'}`}>Hoy</motion.button>
+                        
+                        {/* 🌟 BOTÓN DINÁMICO QUE MUESTRA EL MES Y AÑO 🌟 */}
+                        <motion.button 
+                            whileHover={{ scale: 1.05 }} 
+                            onClick={() => setFechaActual(new Date())} 
+                            className={`px-4 py-2 rounded-xl text-sm font-bold min-w-[150px] transition-all ${
+                                darkMode ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30' : 'bg-cyan-50 text-cyan-600 border border-cyan-200'
+                            }`}
+                        >
+                            {meses[fechaActual.getMonth()]} {fechaActual.getFullYear()}
+                        </motion.button>
+                        
                         <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={navegarSiguiente} className={`px-3 py-2 rounded-xl font-bold ${darkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-100'}`}>›</motion.button>
                     </div>
                 </div>
@@ -183,7 +213,6 @@ function Calendario(){
                                                     {dia}
                                                 </span>
                                                 
-                                                {/* Indicadores puntitos */}
                                                 {tareasDelDia.length > 0 && (
                                                     <div className="flex gap-1 justify-center mt-auto pb-1 flex-wrap">
                                                         {tareasDelDia.slice(0, 3).map((t, i) => (
@@ -205,77 +234,76 @@ function Calendario(){
 
                 {/* VISTA SEMANA */}
                 {vista === "semana" && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="overflow-x-auto">
-                        <div className="grid grid-cols-8 mb-2">
-                            <div className="text-gray-600 text-sm p-2"></div>
-                            {getDiasSemana().map((dia, index) => {
-                                const tareasDelDia = getTareasParaDia(dia)
-                                return (
-                                    <motion.div
-                                        key={index}
-                                        whileHover={{ scale: 1.05 }}
-                                        onClick={() => irAlTablero(dia.getDate())}
-                                        className={`text-center p-2 rounded-xl cursor-pointer transition-all flex flex-col items-center
-                                            ${esHoy(dia) 
-                                                ? "bg-cyan-500/20 border border-cyan-500/30" 
-                                                : darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"}`}
-                                    >
-                                        <div className="text-gray-400 text-xs">{diasSemana[dia.getDay()]}</div>
-                                        <div className={`text-lg font-bold mt-1 ${esHoy(dia) ? "text-cyan-400" : darkMode ? "text-white" : "text-gray-900"}`}>{dia.getDate()}</div>
-                                        
-                                        <div className="flex gap-1 mt-1 h-2">
-                                            {tareasDelDia.slice(0, 3).map((t, i) => (
-                                                <div key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-400" title={t.nombre}></div>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )
-                            })}
-                        </div>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="overflow-x-auto w-full">
+                        <div className="min-w-[800px]">
+                            <div className="grid grid-cols-8 mb-2">
+                                <div className="text-gray-600 text-sm p-2"></div>
+                                {getDiasSemana().map((dia, index) => {
+                                    const tareasDelDia = getTareasParaDia(dia)
+                                    return (
+                                        <motion.div
+                                            key={index}
+                                            whileHover={{ scale: 1.05 }}
+                                            onClick={() => irAlTablero(dia.getDate())}
+                                            className={`text-center p-2 rounded-xl cursor-pointer transition-all flex flex-col items-center
+                                                ${esHoy(dia) 
+                                                    ? "bg-cyan-500/20 border border-cyan-500/30" 
+                                                    : darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"}`}
+                                        >
+                                            <div className="text-gray-400 text-xs">{diasSemana[dia.getDay()]}</div>
+                                            <div className={`text-lg font-bold mt-1 ${esHoy(dia) ? "text-cyan-400" : darkMode ? "text-white" : "text-gray-900"}`}>{dia.getDate()}</div>
+                                            
+                                            <div className="flex gap-1 mt-1 h-2">
+                                                {tareasDelDia.slice(0, 3).map((t, i) => (
+                                                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-400" title={t.nombre}></div>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )
+                                })}
+                            </div>
 
-                        <div className={`border ${darkMode ? 'border-gray-800' : 'border-gray-200'} rounded-2xl overflow-hidden`}>
-                            {horas.map((hora) => (
-                                <div key={hora} className={`grid grid-cols-8 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} min-h-16`}>
-                                    <div className={`text-xs p-2 border-r ${darkMode ? 'border-gray-800/50 text-gray-600' : 'border-gray-200/50 text-gray-400'} flex items-start`}>{hora}:00</div>
-                                    {getDiasSemana().map((dia, index) => {
-                                        // AHORA SÍ: Obtenemos las tareas correspondientes a este día en particular
-                                        const tareasDelDia = getTareasParaDia(dia);
-
-                                        return (
-                                            <motion.div
-                                                key={index}
-                                                whileHover={{ backgroundColor: "rgba(6,182,212,0.05)" }}
-                                                onClick={() => irAlTablero(dia.getDate())}
-                                                className={`border-r ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} cursor-pointer transition-all ${esHoy(dia) ? (darkMode ? "bg-cyan-500/10" : "bg-cyan-500/5") : ""} p-1 relative flex flex-col gap-1`}
-                                            >
-                                                {/* PINTAMOS LAS TAREAS DENTRO DE LA CUADRÍCULA DE LA SEMANA */}
-                                                {tareasDelDia.map((tarea, i) => {
-                                                    const horaInicio = new Date(tarea.fechaInicio).getHours();
-                                                    if (horaInicio === hora) {
-                                                        return (
-                                                            <div 
-                                                                key={`${tarea.id}-${i}`}
-                                                                className={`bg-cyan-500/20 border border-cyan-500/50 ${darkMode ? "text-cyan-400" : "text-cyan-700"} text-[10px] sm:text-xs p-1 rounded overflow-hidden leading-tight`}
-                                                                title={tarea.nombre}
-                                                            >
-                                                                <span className="font-bold truncate block">{tarea.nombre}</span>
-                                                            </div>
-                                                        )
-                                                    }
-                                                    return null;
-                                                })}
-                                            </motion.div>
-                                        )
-                                    })}
-                                </div>
-                            ))}
+                            <div className={`border ${darkMode ? 'border-gray-800' : 'border-gray-200'} rounded-2xl overflow-hidden`}>
+                                {horas.map((hora) => (
+                                    <div key={hora} className={`grid grid-cols-8 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} min-h-16`}>
+                                        <div className={`text-xs p-2 border-r ${darkMode ? 'border-gray-800/50 text-gray-600' : 'border-gray-200/50 text-gray-400'} flex items-start`}>{hora}:00</div>
+                                        {getDiasSemana().map((dia, index) => {
+                                            const tareasDelDia = getTareasParaDia(dia);
+                                            return (
+                                                <motion.div
+                                                    key={index}
+                                                    whileHover={{ backgroundColor: "rgba(6,182,212,0.05)" }}
+                                                    onClick={() => irAlTablero(dia.getDate())}
+                                                    className={`border-r ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} cursor-pointer transition-all ${esHoy(dia) ? (darkMode ? "bg-cyan-500/10" : "bg-cyan-500/5") : ""} p-1 relative flex flex-col gap-1`}
+                                                >
+                                                    {tareasDelDia.map((tarea, i) => {
+                                                        const horaInicio = new Date(tarea.fechaInicio).getHours();
+                                                        if (horaInicio === hora) {
+                                                            return (
+                                                                <div 
+                                                                    key={`${tarea.id}-${i}`}
+                                                                    className={`bg-cyan-500/20 border border-cyan-500/50 ${darkMode ? "text-cyan-400" : "text-cyan-700"} text-[10px] sm:text-xs p-1 rounded overflow-hidden leading-tight`}
+                                                                    title={tarea.nombre}
+                                                                >
+                                                                    <span className="font-bold truncate block">{tarea.nombre}</span>
+                                                                </div>
+                                                            )
+                                                        }
+                                                        return null;
+                                                    })}
+                                                </motion.div>
+                                            )
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </motion.div>
                 )}
 
                 {/* VISTA DÍA */}
                 {vista === "dia" && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`font-bold text-xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Tareas Programadas
@@ -293,10 +321,10 @@ function Calendario(){
                         <div className={`border ${darkMode ? 'border-gray-800' : 'border-gray-200'} rounded-2xl overflow-hidden`}>
                             {horas.map((hora) => (
                                 <div key={hora} className={`grid grid-cols-12 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} min-h-16 transition-all`}>
-                                    <div className={`col-span-1 text-xs p-3 border-r ${darkMode ? 'text-gray-600 border-gray-800/50' : 'text-gray-400 border-gray-200/50'} flex items-start`}>
+                                    <div className={`col-span-2 sm:col-span-1 text-xs p-3 border-r ${darkMode ? 'text-gray-600 border-gray-800/50' : 'text-gray-400 border-gray-200/50'} flex items-start`}>
                                         {hora}:00
                                     </div>
-                                    <div className="col-span-11 p-2 relative flex flex-col gap-1">
+                                    <div className="col-span-10 sm:col-span-11 p-2 relative flex flex-col gap-1">
                                         {tareasDeHoyVistaDia.map((tarea, i) => {
                                             const horaInicio = new Date(tarea.fechaInicio).getHours();
                                             if (horaInicio === hora) {

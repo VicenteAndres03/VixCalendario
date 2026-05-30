@@ -29,4 +29,7 @@ public class Proyecto {
     @Builder.Default
     @Column(nullable = false)
     private LocalDateTime fechaCreacion = LocalDateTime.now();
+
+    @Column(nullable = true, unique = true)
+    private String tokenPublico;
 }

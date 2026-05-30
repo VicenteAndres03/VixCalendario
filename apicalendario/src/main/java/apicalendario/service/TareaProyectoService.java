@@ -60,4 +60,12 @@ public class TareaProyectoService {
         repositorio.save(tarea);
         return "Estado actualizado correctamente";
     }
+
+    public String eliminarTarea(Long id) {
+        TareaProyecto tarea = repositorio.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
+
+        repositorio.delete(tarea);
+        return "Tarea eliminada correctamente";
+    }
 }

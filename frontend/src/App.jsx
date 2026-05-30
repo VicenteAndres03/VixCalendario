@@ -10,6 +10,10 @@ import Proyectos from "./pages/Proyectos"
 import TableroProyecto from "./pages/TableroProyecto"
 import AceptarInvitacion from "./pages/AceptarInvitacion"
 import Metricas from "./pages/Metricas"
+import DashboardAdmin from "./pages/DashboardAdmin"
+import Plan from "./pages/Plan" 
+import Habitos from "./pages/Habitos" 
+import TableroPublico from "./pages/TableroPublico"
 
 import Terminos from "./pages/Terminos"
 import Privacidad from "./pages/Privacidad"
@@ -17,6 +21,7 @@ import Cookies from "./pages/Cookies"
 import Nosotros from "./pages/Nosotros"
 
 import RutaProtegida from "./components/RutaProtegida"
+import RutaPremium from "./components/RutaPremium" // Guardian para funciones de pago
 import Footer from "./components/Footer"
 import AvisoLegal from "./components/AvisoLegal"
 
@@ -34,6 +39,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
             <Route path="/aceptar-invitacion/:token" element={<AceptarInvitacion />} />
+            <Route path="/shared/proyecto/:tokenPublico" element={<TableroPublico />} />
 
             {/* Rutas Legales e Informativas */}
             <Route path="/terminos" element={<Terminos />} />
@@ -41,7 +47,7 @@ function App() {
             <Route path="/cookies" element={<Cookies />} />
             <Route path="/nosotros" element={<Nosotros />} />
 
-            {/* Rutas Protegidas */}
+            {/* 🔥 RUTAS BÁSICAS GRATUITAS (El corazón viral de la app) 🔥 */}
             <Route path="/calendario" element={<RutaProtegida><Calendario /></RutaProtegida>} />
             <Route path="/tablero" element={<RutaProtegida><Tablero /></RutaProtegida>} />
             <Route path="/tablero/:fecha" element={<RutaProtegida><Tablero /></RutaProtegida>} />
@@ -49,12 +55,31 @@ function App() {
             <Route path="/proyectos" element={<RutaProtegida><Proyectos /></RutaProtegida>} />
             <Route path="/proyecto/:id/tablero" element={<RutaProtegida><TableroProyecto /></RutaProtegida>} />
             <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
-            <Route path="/metricas" element={<RutaProtegida><Metricas /></RutaProtegida>} />
+            <Route path="/plan" element={<RutaProtegida><Plan /></RutaProtegida>} /> 
+            
+            {/* 💎 RUTAS EXCLUSIVAS PREMIUM (Bloqueadas si suscripcion !== "ACTIVO") 💎 */}
+            <Route path="/habitos" element={
+              <RutaProtegida>
+                <RutaPremium>
+                  <Habitos />
+                </RutaPremium>
+              </RutaProtegida>
+            } />
+
+            <Route path="/metricas" element={
+              <RutaProtegida>
+                <RutaPremium>
+                  <Metricas />
+                </RutaPremium>
+              </RutaProtegida>
+            } />
+            
+            {/* 👑 Panel de Administración */}
+            <Route path="/admin" element={<RutaProtegida><DashboardAdmin /></RutaProtegida>} />
           </Routes>
         </div>
 
         <Footer />
-        
       </div>
     </Router>
   )

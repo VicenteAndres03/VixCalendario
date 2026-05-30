@@ -98,7 +98,6 @@ function Proyectos() {
         }
     }
 
-    // --- NUEVA FUNCIÓN PARA ELIMINAR ---
     const eliminarProyecto = async (proyectoId) => {
         if (!window.confirm("¿Estás seguro de que deseas eliminar este proyecto de forma permanente?")) return;
         
@@ -255,7 +254,8 @@ function Proyectos() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
-                                            onClick={() => navigate(`/tablero/${proy.proyecto.id}/tablero`)}
+                                            /* 🔥 AQUÍ ESTÁ LA RUTA CORRECTA AHORA 🔥 */
+                                            onClick={() => navigate(`/proyecto/${proy.proyecto.id}/tablero`)}
                                             className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-medium py-2 rounded-xl transition-all"
                                         >
                                             📋 Ver Tablero
@@ -268,7 +268,7 @@ function Proyectos() {
                 )}
             </div>
 
-            {/* Modales (Nuevo Proyecto e Invitar Amigo) se mantienen exactamente igual que tu código original... */}
+            {/* Modal Nuevo Proyecto */}
             <AnimatePresence>
                 {mostrarModal && (
                     <motion.div

@@ -17,4 +17,7 @@ public interface AmistadRepository extends JpaRepository<Amistad, Long> {
     Optional<Amistad> findBySolicitanteAndReceptor(User solicitante, User receptor);
 
     boolean existsBySolicitanteAndReceptor(User solicitante, User receptor);
+
+    // 👇 AGREGA ESTA LÍNEA 👇
+    List<Amistad> findBySolicitanteOrReceptor(User solicitante, User receptor);
 }

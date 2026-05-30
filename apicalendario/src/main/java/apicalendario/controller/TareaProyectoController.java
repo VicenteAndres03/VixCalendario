@@ -32,4 +32,9 @@ public class TareaProyectoController {
     public String cambiarEstado(@PathVariable Long id, @RequestParam Estado nuevoEstado) {
         return service.cambiarEstado(id, nuevoEstado);
     }
+
+    @DeleteMapping("/eliminar/{id}")
+    public String eliminarTarea(@PathVariable Long id) {
+        return service.eliminarTarea(id);
+    }
 }

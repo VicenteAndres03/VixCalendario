@@ -53,4 +53,9 @@ public class ProyectoController {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return service.aceptarInvitacion(token, email);
     }
+
+    @GetMapping("/miembros/{proyectoId}")
+    public List<ProyectoMiembro> obtenerMiembrosProyecto(@PathVariable Long proyectoId) {
+        return service.obtenerMiembrosPorProyecto(proyectoId);
+    }
 }

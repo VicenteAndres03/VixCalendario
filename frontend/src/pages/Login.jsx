@@ -1,9 +1,10 @@
 import { useState } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { login } from "../services/authService"
 import { useNavigate } from "react-router-dom"
+import logoVix from "../assets/Hero.png"
 
-function Login(){
+function Login() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [darkMode, setDarkMode] = useState(true)
@@ -17,6 +18,11 @@ function Login(){
             localStorage.setItem("token", respuesta.token)
             localStorage.setItem("nombre", respuesta.nombre)
             localStorage.setItem("email", respuesta.email)
+            localStorage.setItem("rol", respuesta.rol)
+            
+            // 🔥 AQUÍ GUARDAMOS EL ESTADO DE SUSCRIPCIÓN PARA BLOQUEAR O PERMITIR FUNCIONES
+            localStorage.setItem("suscripcion", respuesta.estadoSuscripcion || "INACTIVO")
+            
             navigate("/calendario")
         } catch (err) {
             setError(err.response?.data?.mensaje || "Credenciales incorrectas")
@@ -30,76 +36,81 @@ function Login(){
     return (
         <div className={`${darkMode ? "bg-gray-950" : "bg-gray-100"} min-h-screen flex relative overflow-hidden transition-all duration-500`}>
             
-            <div className="absolute w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl top-0 left-0"></div>
-            <div className="absolute w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl bottom-0 right-0"></div>
+            {/* Elementos decorativos de fondo */}
+            <div className="absolute w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl top-[-100px] left-[-100px] animate-pulse pointer-events-none"></div>
+            <div className="absolute w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-3xl bottom-[-50px] right-[-50px] animate-pulse delay-700 pointer-events-none"></div>
 
-            {/* NUEVO BOTÓN: Volver al inicio (Arriba a la izquierda) */}
+            {/* Botón Volver al Inicio */}
             <button
                 onClick={() => navigate("/")}
-                className="absolute top-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm transition-all duration-300 flex items-center gap-2 shadow-lg"
+                className={`absolute top-6 left-6 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${darkMode ? "bg-gray-900 text-gray-400 hover:text-white hover:bg-gray-800" : "bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 shadow-sm"}`}
             >
-                <span>←</span> Volver al inicio
+                ← Volver
             </button>
 
+            {/* Toggle Dark Mode */}
             <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="absolute top-4 right-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm transition-all duration-300 shadow-lg"
+                className={`absolute top-6 right-6 p-3 rounded-xl transition-all duration-300 ${darkMode ? "bg-gray-800 text-yellow-400 hover:bg-gray-700" : "bg-white text-gray-800 shadow-md hover:bg-gray-50"}`}
             >
-                {darkMode ? "☀️ Modo Claro" : "🌙 Modo Oscuro"}
+                {darkMode ? "☀️" : "🌙"}
             </button>
 
-            {/* Lado izquierdo */}
-            <div className="hidden md:flex w-1/2 flex-col items-center justify-center p-16 relative">
+            <div className="w-full max-w-md m-auto relative z-10 px-6">
                 <motion.div
-                    animate={{ rotate: 360, y: [0, -20, 0] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                    className="text-9xl mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className={`${darkMode ? "bg-gray-900/80 border-gray-800" : "bg-white border-gray-200 shadow-xl"} backdrop-blur-xl border p-8 rounded-3xl`}
                 >
-                    📅
-                </motion.div>
-                <h1 className={`text-5xl font-bold ${darkMode ? "text-white" : "text-gray-800"} mb-4 text-center`}>
-                    Vix-Flow
-                </h1>
-                <p className="text-gray-400 text-center text-lg">
-                    Organiza tu día, semana y mes de manera inteligente
-                </p>
-            </div>
+                    <div className="text-center mb-8">
+                        <motion.img
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 200 }}
+                            src={logoVix}
+                            alt="Vix Logo"
+                            className="w-16 h-16 mx-auto mb-4"
+                        />
+                        <h2 className={`text-3xl font-extrabold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`}>
+                            Bienvenido de vuelta
+                        </h2>
+                        <p className={`mt-2 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                            Ingresa tus credenciales para continuar
+                        </p>
+                    </div>
 
-            {/* Formulario */}
-            <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-16">
-                <motion.div
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className={`${darkMode ? "bg-gray-900/80 border-cyan-500/30" : "bg-white border-gray-200"} backdrop-blur-sm border p-10 rounded-3xl w-full max-w-md shadow-2xl shadow-cyan-500/10`}
-                >
-                    <h2 className={`text-3xl font-bold ${darkMode ? "text-cyan-400" : "text-cyan-600"} text-center mb-2`}>
-                        Bienvenido
-                    </h2>
-                    <p className="text-gray-400 text-center mb-8 text-sm">
-                        Ingresa tus credenciales para continuar
-                    </p>
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-xl mb-6 text-sm font-medium text-center"
+                            >
+                                {error}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                    {error && (
-                        <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-2 rounded-xl mb-4 text-sm text-center">
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="mb-4">
-                        <label className="text-gray-400 text-sm mb-1 block">Email</label>
+                    <div className="mb-5">
+                        <label className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                            Correo Electrónico
+                        </label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className={`w-full ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-100 border-gray-300 text-gray-800"} border rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all duration-300`}
-                            placeholder="tucorreo@gmail.com"
+                            className={`w-full ${darkMode ? "bg-gray-800 border-gray-700 text-white focus:bg-gray-800" : "bg-gray-100 border-gray-300 text-gray-800"} border rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all duration-300`}
+                            placeholder="tu@correo.com"
                         />
                     </div>
 
-                    <div className="mb-2">
-                        <label className="text-gray-400 text-sm mb-1 block">Contraseña</label>
+                    <div className="mb-6">
+                        <label className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                            Contraseña
+                        </label>
                         <input
                             type="password"
                             value={password}

@@ -34,7 +34,7 @@ public class SecurityConfig {
                                 }))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/usuarios/registro", "/api/usuarios/login",
-                                                                "/error")
+                                                                "/api/pagos/webhook", "/error")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session

@@ -1,8 +1,7 @@
 import { useState, useEffect, useContext } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts"
 import Navbar from "../components/Navbar"
 import axios from "axios"
@@ -194,13 +193,6 @@ function Metricas() {
         }
     }
 
-    const COLORS = ["#06b6d4", "#a855f7", "#22c55e", "#f59e0b"]
-
-    const dataPie = metricasPersonales ? [
-        { name: "Completadas", value: Number(metricasPersonales.totalCompletadas) },
-        { name: "Pendientes", value: Number(metricasPersonales.totalCreadas) - Number(metricasPersonales.totalCompletadas) }
-    ].filter(d => d.value > 0) : []
-
     const dataSemana = metricasPersonales ? [
         { name: "Esta semana", tareas: Number(metricasPersonales.completadasEstaSemana) },
         { name: "Sem. pasada", tareas: Number(metricasPersonales.completadasSemanaPasada) }
@@ -213,16 +205,52 @@ function Metricas() {
         progreso: p.progreso
     })) || []
 
-    // Nivel de racha
+    // ── Lógica de Rachas según tu plan ──
     const rachaActual = metricasPersonales?.rachaActual || 0
-    const nivelRacha = rachaActual >= 90 ? { label: "👑 Leyenda", color: "text-yellow-400" }
-        : rachaActual >= 60 ? { label: "💎 Enfocado", color: "text-purple-400" }
-        : rachaActual >= 30 ? { label: "🏆 Constante", color: "text-orange-400" }
-        : rachaActual >= 14 ? { label: "⚡ En racha", color: "text-cyan-400" }
-        : rachaActual >= 7  ? { label: "🔥 Calentando", color: "text-red-400" }
-        : { label: "🌱 Comenzando", color: "text-green-400" }
+    let proximoObjetivo = 7
+    let recompensaSiguiente = "Temas de color para el tablero"
+    let nivelRacha = { label: "🌱 Comenzando", color: "text-green-400" }
 
-    const diasParaMesGratis = 100 - ((metricasPersonales?.diasGratuitos || 0) % 100)
+    if (rachaActual >= 100 && rachaActual % 100 !== 0) {
+        proximoObjetivo = (Math.floor(rachaActual / 100) + 1) * 100
+        recompensaSiguiente = "1 mes gratis 🎁"
+        nivelRacha = { label: "👑 Leyenda Absoluta", color: "text-yellow-400" }
+    } else if (rachaActual >= 90 && rachaActual < 100) {
+        proximoObjetivo = 100
+        recompensaSiguiente = "1 mes gratis 🎁"
+        nivelRacha = { label: "👑 Leyenda", color: "text-yellow-400" }
+    } else if (rachaActual >= 60 && rachaActual < 90) {
+        proximoObjetivo = 90
+        recompensaSiguiente = "Insignia Leyenda + Acceso anticipado 👑"
+        nivelRacha = { label: "💎 Modo Focus", color: "text-purple-400" }
+    } else if (rachaActual >= 30 && rachaActual < 60) {
+        proximoObjetivo = 60
+        recompensaSiguiente = "Modo Focus (Pomodoro) 💎"
+        nivelRacha = { label: "🏆 30 Días", color: "text-orange-400" }
+    } else if (rachaActual >= 14 && rachaActual < 30) {
+        proximoObjetivo = 30
+        recompensaSiguiente = "Insignia 30 días + 50% dscto 🏆"
+        nivelRacha = { label: "⚡ En racha", color: "text-cyan-400" }
+    } else if (rachaActual >= 7 && rachaActual < 14) {
+        proximoObjetivo = 14
+        recompensaSiguiente = "Avatar animado ⚡"
+        nivelRacha = { label: "🔥 7 Días", color: "text-red-400" }
+    }
+
+    const porcentajeRacha = proximoObjetivo > 0 ? Math.min(Math.round((rachaActual / proximoObjetivo) * 100), 100) : 0
+
+    // ── Lógica para el Panel de Resumen de Hoy ──
+    const hoyPorHacer = metricasPersonales?.hoyPorHacer || 0
+    const hoyEnProceso = metricasPersonales?.hoyEnProceso || 0
+    const hoyCompletadas = metricasPersonales?.hoyCompletadas || 0
+    const totalHoy = hoyPorHacer + hoyEnProceso + hoyCompletadas
+    const progresoHoy = totalHoy > 0 ? Math.round((hoyCompletadas / totalHoy) * 100) : 0
+
+    let mensajeMotivacional = "¡A darle con todo! 🚀"
+    if (progresoHoy === 100 && totalHoy > 0) mensajeMotivacional = "¡Día perfecto! 🌟"
+    else if (progresoHoy >= 50) mensajeMotivacional = "¡Vas genial! 🔥"
+    else if (progresoHoy > 0) mensajeMotivacional = "¡Buen inicio, sigue así! 💪"
+    else if (totalHoy === 0) mensajeMotivacional = "Día libre, o crea tareas nuevas ☕"
 
     return (
         <>
@@ -315,28 +343,59 @@ function Metricas() {
                                         {/* Gráficos fila 1 */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-                                            {/* Pie */}
+                                            {/* Panel Resumen de Hoy */}
                                             <motion.div
                                                 initial={{ opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: 0.3 }}
-                                                className={`p-6 rounded-2xl border ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
+                                                className={`p-6 rounded-2xl border flex flex-col justify-between ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
                                             >
-                                                <h3 className="font-bold text-lg mb-1">Estado de tareas</h3>
-                                                <p className={`text-xs mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Distribución de todas tus tareas</p>
-                                                {dataPie.length > 0 ? (
-                                                    <ResponsiveContainer width="100%" height={220}>
-                                                        <PieChart>
-                                                            <Pie data={dataPie} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value">
-                                                                {dataPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-                                                            </Pie>
-                                                            <Tooltip content={<TooltipCustom darkMode={darkMode} />} />
-                                                            <Legend />
-                                                        </PieChart>
-                                                    </ResponsiveContainer>
-                                                ) : (
-                                                    <div className="flex items-center justify-center h-48 text-gray-500 text-sm">Sin tareas aún</div>
-                                                )}
+                                                <div>
+                                                    <h3 className="font-bold text-lg mb-1">Resumen de Hoy</h3>
+                                                    <p className={`text-xs mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Tu progreso actual en tiempo real</p>
+
+                                                    <div className="space-y-3 mb-6">
+                                                        <div className={`flex items-center justify-between p-3 rounded-xl ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                                                                <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Por Hacer</span>
+                                                            </div>
+                                                            <span className="font-bold text-red-400">{hoyPorHacer}</span>
+                                                        </div>
+                                                        <div className={`flex items-center justify-between p-3 rounded-xl ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                                                <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>En Proceso</span>
+                                                            </div>
+                                                            <span className="font-bold text-yellow-400">{hoyEnProceso}</span>
+                                                        </div>
+                                                        <div className={`flex items-center justify-between p-3 rounded-xl ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                                                                <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Completadas</span>
+                                                            </div>
+                                                            <span className="font-bold text-green-400">{hoyCompletadas}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="flex justify-between items-end mb-2">
+                                                        <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Progreso de hoy</span>
+                                                        <span className="text-2xl font-bold text-cyan-400">{progresoHoy}%</span>
+                                                    </div>
+                                                    <div className={`w-full h-3 rounded-full mb-3 ${darkMode ? "bg-gray-800" : "bg-gray-200"}`}>
+                                                        <motion.div
+                                                            className="h-3 rounded-full bg-gradient-to-r from-cyan-400 to-green-400"
+                                                            initial={{ width: 0 }}
+                                                            animate={{ width: `${progresoHoy}%` }}
+                                                            transition={{ duration: 1, delay: 0.5 }}
+                                                        />
+                                                    </div>
+                                                    <p className={`text-center text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                                        {mensajeMotivacional}
+                                                    </p>
+                                                </div>
                                             </motion.div>
 
                                             {/* Bar semana */}
@@ -395,49 +454,58 @@ function Metricas() {
                                                 </div>
                                             </motion.div>
 
-                                            {/* Racha */}
+                                            {/* Racha con sistema dinámico */}
                                             <motion.div
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.45 }}
-                                                className={`p-6 rounded-2xl border ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
+                                                className={`p-6 rounded-2xl border flex flex-col justify-between ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
                                             >
-                                                <h3 className="font-bold text-lg mb-1">Tu racha</h3>
-                                                <p className={`text-xs mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Completa el 80% de tus tareas diarias para mantenerla</p>
+                                                <div>
+                                                    <h3 className="font-bold text-lg mb-1">Tu racha de enfoque</h3>
+                                                    <p className={`text-xs mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Completa el 80% de tus tareas diarias para mantenerla</p>
 
-                                                {/* Nivel actual */}
-                                                <div className={`flex items-center justify-between p-4 rounded-xl mb-3 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
-                                                    <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Nivel actual</span>
-                                                    <span className={`font-bold text-lg ${nivelRacha.color}`}>{nivelRacha.label}</span>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    {[
-                                                        { emoji: "🔥", label: "Racha actual", valor: `${rachaActual} días`, color: "text-orange-400" },
-                                                        { emoji: "🏆", label: "Mejor racha", valor: `${metricasPersonales.mejorRacha} días`, color: "text-yellow-400" },
-                                                        { emoji: "🎁", label: "Para mes gratis", valor: `${diasParaMesGratis} días`, color: "text-green-400" },
-                                                    ].map((item, i) => (
-                                                        <div key={i} className={`flex items-center justify-between p-3 rounded-xl ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
-                                                            <div className="flex items-center gap-2">
-                                                                <span>{item.emoji}</span>
-                                                                <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.label}</span>
-                                                            </div>
-                                                            <span className={`font-bold ${item.color}`}>{item.valor}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                {/* Barra progreso mes gratis */}
-                                                <div className="mt-4">
-                                                    <div className={`flex justify-between text-xs mb-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                                                        <span>Progreso hacia mes gratis</span>
-                                                        <span>{(metricasPersonales.diasGratuitos % 100)}/100</span>
+                                                    {/* Nivel actual */}
+                                                    <div className={`flex items-center justify-between p-4 rounded-xl mb-4 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
+                                                        <span className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Nivel actual</span>
+                                                        <span className={`font-bold text-lg ${nivelRacha.color}`}>{nivelRacha.label}</span>
                                                     </div>
-                                                    <div className={`w-full h-2 rounded-full ${darkMode ? "bg-gray-800" : "bg-gray-200"}`}>
+
+                                                    <div className="space-y-3">
+                                                        <div className={`flex items-center justify-between p-3 rounded-xl border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"}`}>
+                                                            <div className="flex items-center gap-2">
+                                                                <span>🔥</span>
+                                                                <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Racha actual</span>
+                                                            </div>
+                                                            <span className="font-bold text-orange-500 text-lg">{rachaActual} días</span>
+                                                        </div>
+                                                        <div className={`flex items-center justify-between p-3 rounded-xl ${darkMode ? "bg-transparent" : "bg-transparent"}`}>
+                                                            <div className="flex items-center gap-2">
+                                                                <span>🏆</span>
+                                                                <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Mejor racha histórica</span>
+                                                            </div>
+                                                            <span className={`font-bold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{metricasPersonales.mejorRacha || 0} días</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Barra de progreso hacia la SIGUIENTE recompensa */}
+                                                <div className="mt-6 pt-4 border-t border-dashed border-gray-300 dark:border-gray-700">
+                                                    <div className="flex justify-between items-end mb-2">
+                                                        <div>
+                                                            <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Desbloqueas en {proximoObjetivo - rachaActual} días:</p>
+                                                            <p className={`text-sm font-bold mt-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{recompensaSiguiente}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-2xl font-bold text-orange-400">{porcentajeRacha}%</span>
+                                                            <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{rachaActual} / {proximoObjetivo} d</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`w-full h-3 rounded-full ${darkMode ? "bg-gray-800" : "bg-gray-200"}`}>
                                                         <motion.div
-                                                            className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-green-400"
+                                                            className="h-3 rounded-full bg-gradient-to-r from-orange-400 to-yellow-400"
                                                             initial={{ width: 0 }}
-                                                            animate={{ width: `${(metricasPersonales.diasGratuitos % 100)}%` }}
+                                                            animate={{ width: `${porcentajeRacha}%` }}
                                                             transition={{ duration: 1.2, delay: 0.5 }}
                                                         />
                                                     </div>

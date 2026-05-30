@@ -1,9 +1,11 @@
 package apicalendario.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // <-- Importación agregada
 
 import apicalendario.dto.ActualizarPerfilDto;
 import apicalendario.dto.LoginDto;
@@ -12,10 +14,8 @@ import apicalendario.dto.RegisterDto;
 import apicalendario.exception.CredencialesInvalidasException;
 import apicalendario.exception.CuentaInactivaException;
 import apicalendario.exception.UsuarioNoEncontradoException;
-import apicalendario.model.EstadoSuscripcion;
-import apicalendario.model.Rol;
-import apicalendario.model.User;
-import apicalendario.repository.UsuarioRepository;
+import apicalendario.model.*; // <-- Importación general para modelos
+import apicalendario.repository.*; // <-- Importación general para repositorios
 import apicalendario.security.JwtService;
 import lombok.AllArgsConstructor;
 
@@ -28,6 +28,14 @@ public class UsuarioService {
     private final JwtService jwtService;
     private final TokenBlacklistService tokenblack;
     private final EmailService emailService;
+
+    // ─────────────────────────────────────────
+    // NUEVOS REPOSITORIOS INYECTADOS PARA BORRAR EN CASCADA
+    // ─────────────────────────────────────────
+    private final TareaRepository tareaRepo;
+    private final AmistadRepository amistadRepo;
+    private final ProyectoMiembroRepository proyectoMiembroRepo;
+    private final TareaProyectoRepository tareaProyectoRepo;
 
     public String registrarUsuario(RegisterDto registro) {
         Optional<User> usuarioExistente = repositorio.findByEmail(registro.getEmail());
@@ -76,7 +84,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         if (passwordEncoder.matches(email.getPassword(), usuario.getPassword()) && usuario.isActivo()) {
             String token = jwtService.generarToken(usuario.getEmail());
-            return new LoginResponseDto(token, usuario.getNombre(), usuario.getEmail());
+            return new LoginResponseDto(token, usuario.getNombre(), usuario.getEmail(), usuario.getRol().name());
         } else if (passwordEncoder.matches(email.getPassword(), usuario.getPassword()) && !usuario.isActivo()) {
             throw new CuentaInactivaException("Este usuario ha sido eliminado");
         } else {
@@ -104,5 +112,51 @@ public class UsuarioService {
         repositorio.save(usuario);
 
         return "usuario modificado de manera exitosa";
+    }
+
+    // ─────────────────────────────────────────
+    // FUNCIONES DE ADMINISTRADOR
+    // ─────────────────────────────────────────
+    public List<User> obtenerTodosLosUsuarios() {
+        return repositorio.findAll();
+    }
+
+    public String cambiarEstadoSuscripcion(Long id, EstadoSuscripcion nuevoEstado) {
+        User usuario = repositorio.findById(id)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+        usuario.setEstadoSuscripcion(nuevoEstado);
+        repositorio.save(usuario);
+        return "Suscripción actualizada a " + nuevoEstado.name();
+    }
+
+    @Transactional // <-- Muy importante para que no quede la base de datos corrupta si falla
+    public String eliminarUsuario(Long id) {
+        User usuario = repositorio.findById(id)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+
+        // 1. Eliminar todas sus tareas personales
+        List<Tarea> tareas = tareaRepo.findByUsuario(usuario);
+        tareaRepo.deleteAll(tareas);
+
+        // 2. Eliminar todas sus amistades (ya sea que él invitó o lo invitaron)
+        List<Amistad> amistades = amistadRepo.findBySolicitanteOrReceptor(usuario, usuario);
+        amistadRepo.deleteAll(amistades);
+
+        // 3. Eliminar sus participaciones en proyectos colaborativos
+        List<ProyectoMiembro> membresias = proyectoMiembroRepo.findByUsuario(usuario);
+        proyectoMiembroRepo.deleteAll(membresias);
+
+        // 4. Desasignarlo de las tareas de proyectos para no romper el proyecto de
+        // otros
+        List<TareaProyecto> tareasAsignadas = tareaProyectoRepo.findByAsignadoA(usuario);
+        for (TareaProyecto tp : tareasAsignadas) {
+            tp.setAsignadoA(null);
+            tareaProyectoRepo.save(tp);
+        }
+
+        // 5. Ahora sí, la base de datos nos dejará eliminar al usuario de forma segura
+        repositorio.delete(usuario);
+
+        return "Usuario y todos sus datos asociados fueron eliminados correctamente";
     }
 }

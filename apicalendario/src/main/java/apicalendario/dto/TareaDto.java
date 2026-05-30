@@ -18,7 +18,6 @@ public class TareaDto {
     @NotBlank(message = "El nombre de la tarea no puede quedarn en blanco")
     private String nombre;
 
-    @NotBlank(message = "La descripcion no puede quedar vacia")
     private String descripcion;
 
     @NotNull(message = "Debe tener una fecha de inicio")
