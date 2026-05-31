@@ -21,6 +21,9 @@ function Proyectos() {
     const [mensaje, setMensaje] = useState({ tipo: "", texto: "" })
     const emailUsuario = localStorage.getItem("email")
 
+    // 🔥 NUEVO ESTADO PARA EL MODAL DE CONFIRMACIÓN 🔥
+    const [modalConfirmacion, setModalConfirmacion] = useState({ visible: false, idProyecto: null })
+
     useEffect(() => {
         cargarProyectos()
         cargarAmigos()
@@ -28,13 +31,11 @@ function Proyectos() {
 
     const cargarProyectos = async () => {
         try {
-            // 1. Obtenemos los proyectos
             const response = await axios.get("http://localhost:8080/api/proyectos/mis", {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const proyectosData = response.data;
 
-            // 2. Obtenemos el progreso para cada proyecto
             const proyectosConProgreso = await Promise.all(
                 proyectosData.map(async (proy) => {
                     try {
@@ -98,17 +99,22 @@ function Proyectos() {
         }
     }
 
-    const eliminarProyecto = async (proyectoId) => {
-        if (!window.confirm("¿Estás seguro de que deseas eliminar este proyecto de forma permanente?")) return;
-        
+    // 🔥 NUEVA LÓGICA DE ELIMINACIÓN CUSTOM 🔥
+    const intentarEliminar = (proyectoId) => {
+        setModalConfirmacion({ visible: true, idProyecto: proyectoId })
+    }
+
+    const confirmarEliminacion = async () => {
         try {
-            await axios.delete(`http://localhost:8080/api/proyectos/eliminar/${proyectoId}`, {
+            await axios.delete(`http://localhost:8080/api/proyectos/eliminar/${modalConfirmacion.idProyecto}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setMensaje({ tipo: "exito", texto: "Proyecto eliminado exitosamente" })
-            cargarProyectos() // Recargamos para actualizar la lista
+            cargarProyectos()
+            setModalConfirmacion({ visible: false, idProyecto: null }) 
         } catch (error) {
             setMensaje({ tipo: "error", texto: error.response?.data?.mensaje || "Error al eliminar el proyecto" })
+            setModalConfirmacion({ visible: false, idProyecto: null })
         }
     }
 
@@ -207,7 +213,7 @@ function Proyectos() {
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        eliminarProyecto(proy.proyecto.id);
+                                                        intentarEliminar(proy.proyecto.id);
                                                     }}
                                                     className="text-red-500/70 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors"
                                                     title="Eliminar proyecto"
@@ -254,7 +260,6 @@ function Proyectos() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
-                                            /* 🔥 AQUÍ ESTÁ LA RUTA CORRECTA AHORA 🔥 */
                                             onClick={() => navigate(`/proyecto/${proy.proyecto.id}/tablero`)}
                                             className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-medium py-2 rounded-xl transition-all"
                                         >
@@ -267,6 +272,31 @@ function Proyectos() {
                     </div>
                 )}
             </div>
+
+            {/* 🔥 NUEVO MODAL DE CONFIRMACIÓN 🔥 */}
+            <AnimatePresence>
+                {modalConfirmacion.visible && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => setModalConfirmacion({ visible: false, idProyecto: null })}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className={`border rounded-3xl p-8 w-full max-w-sm text-center shadow-2xl ${darkMode ? "bg-gray-900 border-red-500/30" : "bg-white border-red-200"}`}>
+                            <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-500 text-3xl flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                                ⚠️
+                            </div>
+                            <h2 className={`text-xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Eliminar Proyecto</h2>
+                            <p className={`text-sm mb-6 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                ¿Estás seguro de que deseas eliminar este proyecto de forma permanente? Esta acción borrará todas las tareas y no se puede deshacer.
+                            </p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setModalConfirmacion({ visible: false, idProyecto: null })} className={`w-1/2 py-3 rounded-xl font-medium transition-colors ${darkMode ? "bg-gray-800 hover:bg-gray-700 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-800"}`}>
+                                    Cancelar
+                                </button>
+                                <button onClick={confirmarEliminacion} className="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/20 transition-all">
+                                    Sí, eliminar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Modal Nuevo Proyecto */}
             <AnimatePresence>

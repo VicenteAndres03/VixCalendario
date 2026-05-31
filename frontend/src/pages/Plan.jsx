@@ -4,13 +4,21 @@ import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { ThemeContext } from "../context/ThemeContext"
 import axios from "axios"
+import { crearSuscripcion } from "../services/authService" // 🔥 Importación correcta 🔥
 
 function Plan() {
     const { darkMode } = useContext(ThemeContext)
     const navigate = useNavigate()
     const token = localStorage.getItem("token")
     const suscripcionActual = localStorage.getItem("suscripcion") || "INACTIVO"
+    
+    // Leemos si el usuario ya consumió su mes de prueba (lo ideal es guardarlo en el login)
+    const [pruebaConsumida, setPruebaConsumida] = useState(
+        () => localStorage.getItem("pruebaConsumida") === "true"
+    )
+    
     const [cargandoPago, setCargandoPago] = useState(false)
+    const [cargandoPrueba, setCargandoPrueba] = useState(false)
 
     const caracteristicasGratis = [
         "📅 Calendario personal interactivo",
@@ -29,26 +37,58 @@ function Plan() {
         "⚡ Soporte prioritario y alta disponibilidad"
     ]
 
-    // 🔥 CORREGIDO: Conexión exacta con tu PagoController
+    // 🔥 Función corregida para enviar el token y conectarse a Mercado Pago 🔥
     const iniciarPagoPremium = async () => {
+        const email = localStorage.getItem("email");
+        const tokenGuardado = localStorage.getItem("token"); 
+        
+        if (!email || !tokenGuardado) {
+            alert("Debes iniciar sesión para suscribirte.");
+            return;
+        }
+
         try {
-            setCargandoPago(true)
-            // Hacemos la petición a la ruta exacta de tu backend (/generar-link)
-            const res = await axios.post("http://localhost:8080/api/pagos/generar-link", {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
+            setCargandoPago(true);
             
-            // Tu backend devuelve directamente el texto con la URL de Flow
-            if (res.data && typeof res.data === 'string' && res.data.startsWith('http')) {
-                window.location.href = res.data
+            // Le pasamos email Y token al servicio
+            const respuesta = await crearSuscripcion(email, tokenGuardado);
+            
+            // Si recibimos una URL, redirigimos al usuario
+            if (respuesta && respuesta.url) {
+                window.location.href = respuesta.url; 
             } else {
-                alert("Hubo un problema al generar la orden de pago. Revisa la consola del backend.")
+                alert("No se pudo obtener el enlace de pago. Intenta de nuevo.");
             }
         } catch (error) {
-            console.error("Error al iniciar el pago con Flow:", error)
-            alert("No se pudo conectar con la pasarela de pagos.")
+            console.error("Error al iniciar suscripción:", error);
+            alert("Error al conectar con Mercado Pago. Revisa la consola.");
         } finally {
-            setCargandoPago(false)
+            setCargandoPago(false);
+        }
+    };
+
+    // Canjear el mes gratuito directamente en el Backend
+    const canjearMesGratis = async () => {
+        try {
+            setCargandoPrueba(true)
+            const res = await axios.post("http://localhost:8080/api/usuarios/canjear-prueba", {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+            alert(res.data || "¡Mes premium activado con éxito!");
+            
+            // Actualizamos los accesos de inmediato en el navegador
+            localStorage.setItem("suscripcion", "ACTIVO")
+            localStorage.setItem("pruebaConsumida", "true")
+            setPruebaConsumida(true)
+            
+            // Redirigimos al espacio de trabajo renovado
+            navigate("/calendario")
+        } catch (error) {
+            console.error("Error al canjear el mes gratis:", error)
+            alert(error.response?.data || "No se pudo procesar la solicitud del mes gratuito.")
+        } finally {
+            setCargandoPrueba(false)
         }
     }
 
@@ -171,9 +211,9 @@ function Plan() {
 
                             <div className="my-6">
                                 <span className="text-4xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-                                    $3 USD
+                                    $3.000
                                 </span>
-                                <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}> / mes</span>
+                                <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}> CLP / mes</span>
                             </div>
 
                             <hr className={`my-6 ${darkMode ? "border-purple-500/20" : "border-gray-100"}`} />
@@ -188,7 +228,7 @@ function Plan() {
                             </ul>
                         </div>
 
-                        <div className="mt-8">
+                        <div className="mt-8 space-y-3">
                             {suscripcionActual === "ACTIVO" ? (
                                 <motion.button 
                                     whileTap={{ scale: 0.98 }}
@@ -198,22 +238,48 @@ function Plan() {
                                     ¡Disfrutar de mi cuenta Premium!
                                 </motion.button>
                             ) : (
-                                <motion.button 
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={iniciarPagoPremium}
-                                    disabled={cargandoPago}
-                                    className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20 hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                                >
-                                    {cargandoPago ? ( 
-                                        <>
-                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                            Conectando con Flow...
-                                        </>
-                                    ) : (
-                                        "Mejorar a Premium con Flow"
+                                <>
+                                    <motion.button 
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={iniciarPagoPremium}
+                                        disabled={cargandoPago || cargandoPrueba}
+                                        className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20 hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {cargandoPago ? ( 
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                                Conectando con Mercado Pago...
+                                            </>
+                                        ) : (
+                                            "Mejorar a Premium con Mercado Pago"
+                                        )}
+                                    </motion.button>
+
+                                    {/* BOTÓN DINÁMICO DE UN MES GRATIS */}
+                                    {!pruebaConsumida && (
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={canjearMesGratis}
+                                            disabled={cargandoPago || cargandoPrueba}
+                                            className={`w-full font-bold py-3 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 disabled:opacity-50 ${
+                                                darkMode 
+                                                    ? "bg-gray-900 border-purple-500/40 text-purple-400 hover:bg-purple-500/10" 
+                                                    : "bg-purple-50 border-purple-200 text-purple-600 hover:bg-purple-100"
+                                            }`}
+                                        >
+                                            {cargandoPrueba ? (
+                                                <>
+                                                    <span className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></span>
+                                                    Validando cupón...
+                                                </>
+                                            ) : (
+                                                "🎁 Canjea tu mes gratis de prueba"
+                                            )}
+                                        </motion.button>
                                     )}
-                                </motion.button>
+                                </>
                             )}
                         </div>
                     </motion.div>
@@ -221,7 +287,7 @@ function Plan() {
                 </div>
 
                 <p className={`text-center text-xs mt-12 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                    Pagos procesados de forma segura mediante Flow. Puedes cancelar tu renovación mensual en cualquier momento desde tu perfil.
+                    Pagos procesados de forma segura mediante Mercado Pago. Puedes cancelar tu renovación mensual en cualquier momento desde tu perfil.
                 </p>
 
             </div>

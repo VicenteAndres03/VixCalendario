@@ -27,17 +27,16 @@ function Tablero(){
 
     const [tareas, setTareas] = useState({ POR_HACER: [], EN_PROCESO: [], TERMINADO: [] })
     
-    // 🏆 Gamificación
+    // Controles de Gamificación y Focus
     const [rachaActual, setRachaActual] = useState(0)
     const [mostrarSelectorTema, setMostrarSelectorTema] = useState(false)
     const [temaActivo, setTemaActivo] = useState(() => localStorage.getItem("temaKanban") || "default")
 
-    // ⏱️ Pomodoro / Modo Focus (Nivel 60)
     const [mostrarPomodoro, setMostrarPomodoro] = useState(false)
     const [pomodoroMinutos, setPomodoroMinutos] = useState(25)
     const [pomodoroSegundos, setPomodoroSegundos] = useState(0)
     const [pomodoroActivo, setPomodoroActivo] = useState(false)
-    const [pomodoroModo, setPomodoroModo] = useState('trabajo') // 'trabajo' | 'descanso'
+    const [pomodoroModo, setPomodoroModo] = useState('trabajo')
 
     const [formularioCrear, setFormularioCrear] = useState({
         nombre: "", descripcion: "", horaInicio: "09:00", horaFin: "10:00", esRecurrente: false, diasRecurrencia: []
@@ -48,6 +47,9 @@ function Tablero(){
     const [tareaEditando, setTareaEditando] = useState({
         nombre: "", descripcion: "", fechaInicio: "", fechaFin: "", esRecurrente: false, diasRecurrencia: "" 
     })
+
+    // 🔥 NUEVO ESTADO PARA EL MODAL DE CONFIRMACIÓN 🔥
+    const [modalConfirmacion, setModalConfirmacion] = useState({ visible: false, idTarea: null })
 
     const infoColumnas = [ { id: "POR_HACER", titulo: "Por Hacer" }, { id: "EN_PROCESO", titulo: "En Proceso" }, { id: "TERMINADO", titulo: "Terminado" } ]
 
@@ -69,14 +71,12 @@ function Tablero(){
 
     useEffect(() => { cargarTareas(); cargarMetricas(); }, [fechaFormateada])
 
-    // Lógica del Temporizador Pomodoro
     useEffect(() => {
         let intervalo;
         if (pomodoroActivo) {
             intervalo = setInterval(() => {
                 if (pomodoroSegundos === 0) {
                     if (pomodoroMinutos === 0) {
-                        // Reproduce un sonido de campana suave al terminar (Audio por defecto del navegador/web)
                         new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(()=>{});
                         if (pomodoroModo === 'trabajo') {
                             setPomodoroModo('descanso'); setPomodoroMinutos(5);
@@ -141,10 +141,18 @@ function Tablero(){
         } catch (err) { console.error(err) }
     }
 
-    const eliminarTarea = async (id) => {
-        if (window.confirm("¿Estás seguro de que deseas eliminar esta tarea?")) {
-            try { await axios.delete(`http://localhost:8080/api/tarea/${id}`, { headers: { Authorization: `Bearer ${token}` } }); cargarTareas() } 
-            catch (err) { console.error(err) }
+    // 🔥 NUEVA LÓGICA DE ELIMINACIÓN CUSTOM 🔥
+    const intentarEliminar = (id) => {
+        setModalConfirmacion({ visible: true, idTarea: id })
+    }
+
+    const confirmarEliminacion = async () => {
+        try { 
+            await axios.delete(`http://localhost:8080/api/tarea/${modalConfirmacion.idTarea}`, { headers: { Authorization: `Bearer ${token}` } }); 
+            cargarTareas();
+            setModalConfirmacion({ visible: false, idTarea: null }) 
+        } catch (err) { 
+            console.error(err) 
         }
     }
 
@@ -167,6 +175,12 @@ function Tablero(){
                 if (destination.droppableId === "TERMINADO") cargarMetricas()
             } catch (err) { cargarTareas() }
         }
+    }
+
+    const cambiarTema = (idTema) => {
+        setTemaActivo(idTema)
+        localStorage.setItem("temaKanban", idTema)
+        setMostrarSelectorTema(false)
     }
 
     const SelectorHora = ({ valor, onChange, icono }) => {
@@ -206,7 +220,6 @@ function Tablero(){
                         <p className="text-cyan-500 mt-1 font-medium">{tituloFecha}</p>
                     </div>
                     
-                    {/* CONTROLES GAMIFICADOS (Racha, Temas y Pomodoro) */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}`}>
                             <span className="text-xl">🔥</span>
@@ -216,7 +229,6 @@ function Tablero(){
                             </div>
                         </div>
 
-                        {/* Botón Nivel 7: Temas */}
                         {rachaActual >= 7 ? (
                             <div className="relative">
                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setMostrarSelectorTema(!mostrarSelectorTema)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold shadow-lg shadow-purple-500/20 flex items-center gap-2 text-sm">
@@ -245,7 +257,6 @@ function Tablero(){
                             </div>
                         )}
 
-                        {/* Botón Nivel 60: Pomodoro / Focus Mode */}
                         {rachaActual >= 60 ? (
                             <motion.button 
                                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} 
@@ -321,7 +332,8 @@ function Tablero(){
                                                                         <h3 className={`font-medium flex items-center ${darkMode ? "text-white" : "text-gray-800"} ${columna.id === "TERMINADO" ? "line-through opacity-50" : ""}`}>{tarea.nombre}</h3>
                                                                         <div className="flex gap-3 items-center">
                                                                             <button onClick={() => abrirModalEditar(tarea)} className="text-gray-400 hover:text-cyan-500 transition-colors">✏️</button>
-                                                                            <button onClick={() => eliminarTarea(tarea.id)} className="text-gray-400 hover:text-red-400 transition-colors">🗑️</button>
+                                                                            {/* 🔥 CAMBIADO: AHORA LLAMA A INTENTAR ELIMINAR 🔥 */}
+                                                                            <button onClick={() => intentarEliminar(tarea.id)} className="text-gray-400 hover:text-red-400 transition-colors">🗑️</button>
                                                                         </div>
                                                                     </div>
                                                                     {tarea.descripcion && tarea.descripcion !== "Sin descripción" && <p className={`text-sm mt-1 mb-2 line-clamp-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{tarea.descripcion}</p>}
@@ -347,7 +359,6 @@ function Tablero(){
                 </DragDropContext>
             </div>
 
-            {/* 🔥 WIDGET FLOTANTE POMODORO (Solo visible si está activo) */}
             <AnimatePresence>
                 {mostrarPomodoro && (
                     <motion.div 
@@ -385,6 +396,31 @@ function Tablero(){
                 )}
             </AnimatePresence>
 
+            {/* 🔥 NUEVO MODAL DE CONFIRMACIÓN 🔥 */}
+            <AnimatePresence>
+                {modalConfirmacion.visible && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => setModalConfirmacion({ visible: false, idTarea: null })}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className={`border rounded-3xl p-8 w-full max-w-sm text-center shadow-2xl ${darkMode ? "bg-gray-900 border-red-500/30" : "bg-white border-red-200"}`}>
+                            <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-500 text-3xl flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                                ⚠️
+                            </div>
+                            <h2 className={`text-xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Eliminar Tarea</h2>
+                            <p className={`text-sm mb-6 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                ¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setModalConfirmacion({ visible: false, idTarea: null })} className={`w-1/2 py-3 rounded-xl font-medium transition-colors ${darkMode ? "bg-gray-800 hover:bg-gray-700 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-800"}`}>
+                                    Cancelar
+                                </button>
+                                <button onClick={confirmarEliminacion} className="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/20 transition-all">
+                                    Sí, eliminar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* MODAL PARA EDITAR TAREAS */}
             <AnimatePresence>
                 {mostrarModalEditar && (
@@ -417,9 +453,25 @@ function Tablero(){
                                 <div className="mb-6">
                                     <label className={`text-xs mb-2 block ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Días seleccionados</label>
                                     <div className="flex gap-2 flex-wrap">
-                                        {diasSelector.map(dia => (
-                                            <button key={dia} type="button" onClick={() => { let arr = tareaEditando.diasRecurrencia ? tareaEditando.diasRecurrencia.split(",") : []; if (arr.includes(dia)) arr = arr.filter(d => d !== dia && d !== ""); else arr.push(dia); setTareaEditando({...tareaEditando, diasRecurrencia: arr.join(",")}); }} className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${tareaEditando.diasRecurrencia?.includes(dia) ? 'bg-cyan-500 text-gray-950 shadow-md' : darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-600'}`}>{dia}</button>
-                                        ))}
+                                        {diasSelector.map(dia => {
+                                            const arrDias = tareaEditando.diasRecurrencia ? tareaEditando.diasRecurrencia.split(",") : [];
+                                            const estaSeleccionado = arrDias.includes(dia);
+                                            return (
+                                                <button 
+                                                    key={dia} 
+                                                    type="button" 
+                                                    onClick={() => { 
+                                                        let arr = [...arrDias]; 
+                                                        if (arr.includes(dia)) arr = arr.filter(d => d !== dia && d !== ""); 
+                                                        else arr.push(dia); 
+                                                        setTareaEditando({...tareaEditando, diasRecurrencia: arr.join(",")}); 
+                                                    }} 
+                                                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${estaSeleccionado ? 'bg-cyan-500 text-gray-950 shadow-md' : darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-600'}`}
+                                                >
+                                                    {dia}
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )}

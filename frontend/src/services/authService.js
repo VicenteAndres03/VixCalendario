@@ -13,7 +13,8 @@ export const login = async (datos) => {
 }
 
 export const actualizarPerfil = async (datos, email, token) => {
-    const response = await axios.put(`${API_URL}/usuarios`, datos, {
+    // Agregamos "/modificar" a la URL para que coincida exactamente con el backend
+    const response = await axios.put(`${API_URL}/usuarios/modificar`, datos, {
         headers: { Authorization: `Bearer ${token}` },
         params: { email }
     })
@@ -28,18 +29,6 @@ export const eliminarCuenta = async (email, token) => {
     return response.data
 }
 
-// ─────────────────────────────────────────
-// NUEVA FUNCIÓN: Generar Link de Pago Flow
-// ─────────────────────────────────────────
-export const generarLinkPago = async (token) => {
-    const response = await axios.post(`${API_URL}/pagos/generar-link`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-    // Flow nos devuelve la URL en formato texto (String)
-    return response.data
-}
-
-// Funciones de Admin que habíamos creado antes (las mantengo por si acaso)
 export const obtenerTodosLosUsuarios = async (token) => {
     const response = await axios.get(`${API_URL}/usuarios/admin/todos`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -61,3 +50,49 @@ export const eliminarUsuarioAdmin = async (id, token) => {
     })
     return response.data
 }
+
+export const obtenerAmigos = async (token) => {
+    const response = await axios.get(`${API_URL}/amigos/lista`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.data
+}
+
+export const obtenerSolicitudes = async (token) => {
+    const response = await axios.get(`${API_URL}/amigos/solicitudes`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.data
+}
+
+export const eliminarAmigoService = async (emailAmigo, token) => {
+    const response = await axios.delete(`${API_URL}/amigos/eliminar`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { emailAmigo }
+    })
+    return response.data
+}
+
+export const recuperarPasswordService = async (email) => {
+    const response = await axios.post(`${API_URL}/usuarios/recuperar-password`, null, {
+        params: { email }
+    })
+    return response.data
+}
+
+export const enviarMensajeSoporte = async (datos) => {
+    // Si en SecurityConfig.java esta ruta no está pública, esto requerirá token. 
+    // Por ahora la dejamos como la tenías.
+    const response = await axios.post(`${API_URL}/soporte/enviar`, datos)
+    return response.data
+}
+
+// ─────────────────────────────────────────
+// NUEVA FUNCIÓN: Generar Link de Mercado Pago
+// ─────────────────────────────────────────
+export const crearSuscripcion = async (email, token) => {
+    const response = await axios.post(`${API_URL}/pagos/crear-suscripcion?email=${email}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data; 
+};

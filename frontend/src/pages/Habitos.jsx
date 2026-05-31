@@ -10,6 +10,9 @@ function Habitos() {
     const [habitos, setHabitos] = useState([])
     const [nuevoHabito, setNuevoHabito] = useState("")
 
+    // 🔥 NUEVO ESTADO PARA EL MODAL DE CONFIRMACIÓN 🔥
+    const [modalConfirmacion, setModalConfirmacion] = useState({ visible: false, idHabito: null })
+
     // Generamos un arreglo con los últimos 90 días para el Heatmap
     const diasHeatmap = Array.from({ length: 90 }, (_, i) => {
         const d = new Date()
@@ -53,14 +56,22 @@ function Habitos() {
         } catch (error) { console.error("Error al marcar hábito", error) }
     }
 
-    const eliminarHabito = async (id) => {
-        if (!window.confirm("¿Seguro que deseas eliminar este hábito y todo su historial?")) return
+    // 🔥 NUEVA LÓGICA DE ELIMINACIÓN CUSTOM 🔥
+    const intentarEliminar = (id) => {
+        setModalConfirmacion({ visible: true, idHabito: id })
+    }
+
+    const confirmarEliminacion = async () => {
         try {
-            await axios.delete(`http://localhost:8080/api/habitos/${id}`, {
+            await axios.delete(`http://localhost:8080/api/habitos/${modalConfirmacion.idHabito}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             cargarHabitos()
-        } catch (error) { console.error("Error eliminando", error) }
+            setModalConfirmacion({ visible: false, idHabito: null })
+        } catch (error) { 
+            console.error("Error eliminando", error) 
+            setModalConfirmacion({ visible: false, idHabito: null })
+        }
     }
 
     return (
@@ -131,7 +142,7 @@ function Habitos() {
                                             </div>
                                         </div>
 
-                                        <button onClick={() => eliminarHabito(habito.id)} className="text-gray-400 hover:text-red-500 p-2 rounded-xl transition-all hover:bg-red-500/10">
+                                        <button onClick={() => intentarEliminar(habito.id)} className="text-gray-400 hover:text-red-500 p-2 rounded-xl transition-all hover:bg-red-500/10">
                                             🗑️ Eliminar
                                         </button>
                                     </div>
@@ -174,6 +185,31 @@ function Habitos() {
                     )}
                 </div>
             </div>
+
+            {/* 🔥 NUEVO MODAL DE CONFIRMACIÓN 🔥 */}
+            <AnimatePresence>
+                {modalConfirmacion.visible && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => setModalConfirmacion({ visible: false, idHabito: null })}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className={`border rounded-3xl p-8 w-full max-w-sm text-center shadow-2xl ${darkMode ? "bg-gray-900 border-red-500/30" : "bg-white border-red-200"}`}>
+                            <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-500 text-3xl flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                                ⚠️
+                            </div>
+                            <h2 className={`text-xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Eliminar Hábito</h2>
+                            <p className={`text-sm mb-6 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                ¿Seguro que deseas eliminar este hábito y todo su historial de 90 días? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setModalConfirmacion({ visible: false, idHabito: null })} className={`w-1/2 py-3 rounded-xl font-medium transition-colors ${darkMode ? "bg-gray-800 hover:bg-gray-700 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-800"}`}>
+                                    Cancelar
+                                </button>
+                                <button onClick={confirmarEliminacion} className="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/20 transition-all">
+                                    Sí, eliminar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

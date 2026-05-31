@@ -18,6 +18,7 @@ import apicalendario.dto.ActualizarPerfilDto;
 import apicalendario.dto.LoginDto;
 import apicalendario.dto.LoginResponseDto;
 import apicalendario.dto.RegisterDto;
+import apicalendario.exception.UsuarioNoEncontradoException;
 import apicalendario.model.EstadoSuscripcion;
 import apicalendario.model.User;
 import apicalendario.service.UsuarioService;
@@ -40,11 +41,6 @@ public class UsuarioController {
     @PostMapping("/login")
     public LoginResponseDto IniciarSesion(@Valid @RequestBody LoginDto email) {
         return service.IniciarSesion(email);
-    }
-
-    @GetMapping("/perfil")
-    public String BuscarUsuario() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     @DeleteMapping("/borrar")
@@ -80,12 +76,47 @@ public class UsuarioController {
     public ResponseEntity<LoginResponseDto> obtenerPerfil() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User usuario = service.obtenerPorEmail(email);
+
+        // 👇 Agregamos usuario.getApellido() como tercer parámetro 👇
         LoginResponseDto dto = new LoginResponseDto(
                 null,
                 usuario.getNombre(),
+                usuario.getApellido(), // <--- ESTE ES EL NUEVO DATO
                 usuario.getEmail(),
                 usuario.getRol().name(),
-                usuario.getEstadoSuscripcion().name());
+                usuario.getEstadoSuscripcion().name(),
+                usuario.isPruebaConsumida());
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/canjear-prueba")
+    public ResponseEntity<String> canjearMesGratis() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User usuario = service.obtenerPorEmail(email);
+
+        if (usuario.isPruebaConsumida()) {
+            return ResponseEntity.badRequest().body("Ya has canjeado tu mes de prueba gratuito anteriormente.");
+        }
+
+        usuario.setEstadoSuscripcion(EstadoSuscripcion.ACTIVO);
+        usuario.setPruebaConsumida(true);
+        // 👇 AQUÍ ESTÁ LA MAGIA: Le sumamos 30 días exactos a la fecha actual
+        usuario.setFechaFinPremium(java.time.LocalDate.now().plusDays(30));
+
+        service.guardarUsuario(usuario);
+
+        return ResponseEntity.ok("¡Felicidades! Tu mes gratis Premium ha sido activado.");
+    }
+
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<String> recuperarPassword(@RequestParam String email) {
+        try {
+            String mensaje = service.recuperarPassword(email);
+            return ResponseEntity.ok(mensaje);
+        } catch (UsuarioNoEncontradoException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Ocurrió un error al procesar la solicitud.");
+        }
     }
 }

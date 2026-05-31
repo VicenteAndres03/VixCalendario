@@ -11,8 +11,11 @@ public class LoginResponseDto {
 
     private String token;
     private String nombre;
+    private String apellido;
     private String email;
     private String rol; // ← agregar este campo
     private String estadoSuscripcion; // ← AGREGAR ESTE CAMPO
+    // En LoginResponseDto.java agrega:
+    private boolean pruebaConsumida;
 
 }

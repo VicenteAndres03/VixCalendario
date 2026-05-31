@@ -14,6 +14,7 @@ import DashboardAdmin from "./pages/DashboardAdmin"
 import Plan from "./pages/Plan" 
 import Habitos from "./pages/Habitos" 
 import TableroPublico from "./pages/TableroPublico"
+import Soporte from "./pages/Soporte" // 🔥 NUEVA PÁGINA IMPORTADA 🔥
 
 import Terminos from "./pages/Terminos"
 import Privacidad from "./pages/Privacidad"
@@ -43,6 +44,7 @@ function App() {
             <Route path="/registro" element={<Registro />} />
             <Route path="/aceptar-invitacion/:token" element={<AceptarInvitacion />} />
             <Route path="/shared/proyecto/:tokenPublico" element={<TableroPublico />} />
+            <Route path="/soporte" element={<Soporte />} /> {/* 🔥 NUEVA RUTA DE SOPORTE 🔥 */}
 
             {/* Rutas Legales e Informativas */}
             <Route path="/terminos" element={<Terminos />} />

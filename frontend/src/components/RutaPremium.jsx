@@ -18,8 +18,14 @@ function RutaPremium({ children }) {
         })
         .then(res => {
             const suscripcion = res.data.estadoSuscripcion || "INACTIVO"
+            const rol = res.data.rol || "USER" 
+            
+            // Guardamos ambos datos por precaución
             localStorage.setItem("suscripcion", suscripcion)
-            setEsPremium(suscripcion === "ACTIVO")
+            localStorage.setItem("rol", rol)
+
+            // 🔥 EL TRUCO ESTÁ AQUÍ: Se aprueba el pase si la cuenta es ACTIVO o si es el ADMIN
+            setEsPremium(suscripcion === "ACTIVO" || rol === "ADMIN")
         })
         .catch(() => {
             setEsPremium(false)
@@ -30,7 +36,7 @@ function RutaPremium({ children }) {
     }, [])
 
     if (!verificado) {
-        return null // o un spinner si prefieres
+        return null // Pantalla invisible mientras verifica silenciosamente con el backend
     }
 
     if (!esPremium) {

@@ -45,4 +45,11 @@ public class AmistadController {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return service.obtenerAmigos(email);
     }
+
+    // 👇 ESTE ES EL NUEVO ENDPOINT PARA ELIMINAR 👇
+    @DeleteMapping("/eliminar")
+    public String eliminarAmigo(@RequestParam("emailAmigo") String emailAmigo) {
+        String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
+        return service.eliminarAmigo(emailUsuario, emailAmigo);
+    }
 }

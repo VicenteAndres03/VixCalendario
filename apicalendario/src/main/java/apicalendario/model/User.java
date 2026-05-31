@@ -72,4 +72,9 @@ public class User {
     @Column(nullable = false)
     private int diasGratuitos = 0; // contador para los 100 días → mes gratis
 
+    private boolean pruebaConsumida = false;
+
+    // Añade esta variable a tu modelo User
+    private LocalDate fechaFinPremium;
+
 }

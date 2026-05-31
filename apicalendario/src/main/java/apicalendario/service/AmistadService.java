@@ -26,13 +26,15 @@ public class AmistadService {
         User receptor = repositorioU.findByEmail(dto.getEmailReceptor())
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario receptor no encontrado"));
 
-        if (repositorio.existsBySolicitanteAndReceptor(solicitante, receptor)) {
-            return "Ya existe una solicitud pendiente";
+        if (repositorio.existsBySolicitanteAndReceptor(solicitante, receptor) ||
+                repositorio.existsBySolicitanteAndReceptor(receptor, solicitante)) {
+            return "Ya existe una solicitud pendiente o amistad con este usuario";
         }
 
         Amistad amistad = Amistad.builder()
                 .solicitante(solicitante)
                 .receptor(receptor)
+                .estado(EstadoAmistad.PENDIENTE) // Aseguramos que inicie en pendiente
                 .build();
         repositorio.save(amistad);
         return "Solicitud enviada correctamente";
@@ -63,6 +65,25 @@ public class AmistadService {
     public List<Amistad> obtenerAmigos(String email) {
         User usuario = repositorioU.findByEmail(email)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
-        return repositorio.findBySolicitanteAndEstado(usuario, EstadoAmistad.ACEPTADA);
+
+        // 🔥 CORRECCIÓN: Ahora busca en ambas direcciones usando el Query personalizado
+        // 🔥
+        return repositorio.findAmigosConfirmados(usuario, EstadoAmistad.ACEPTADA);
+    }
+
+    // Método para eliminar amigos que habíamos creado antes
+    public String eliminarAmigo(String emailUsuario, String emailAmigo) {
+        User usuario = repositorioU.findByEmail(emailUsuario)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+        User amigo = repositorioU.findByEmail(emailAmigo)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Amigo no encontrado"));
+
+        Amistad amistad = repositorio.findBySolicitanteAndReceptor(usuario, amigo)
+                .orElseGet(() -> repositorio.findBySolicitanteAndReceptor(amigo, usuario)
+                        .orElseThrow(() -> new RuntimeException("No existe una relación de amistad con este usuario")));
+
+        repositorio.delete(amistad);
+
+        return "Amigo eliminado correctamente";
     }
 }

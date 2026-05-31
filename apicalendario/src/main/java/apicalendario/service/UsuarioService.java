@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // <-- Importación agregada
+import org.springframework.transaction.annotation.Transactional;
 
 import apicalendario.dto.ActualizarPerfilDto;
 import apicalendario.dto.LoginDto;
@@ -14,8 +14,8 @@ import apicalendario.dto.RegisterDto;
 import apicalendario.exception.CredencialesInvalidasException;
 import apicalendario.exception.CuentaInactivaException;
 import apicalendario.exception.UsuarioNoEncontradoException;
-import apicalendario.model.*; // <-- Importación general para modelos
-import apicalendario.repository.*; // <-- Importación general para repositorios
+import apicalendario.model.*;
+import apicalendario.repository.*;
 import apicalendario.security.JwtService;
 import lombok.AllArgsConstructor;
 
@@ -30,7 +30,7 @@ public class UsuarioService {
     private final EmailService emailService;
 
     // ─────────────────────────────────────────
-    // NUEVOS REPOSITORIOS INYECTADOS PARA BORRAR EN CASCADA
+    // REPOSITORIOS INYECTADOS PARA BORRAR EN CASCADA
     // ─────────────────────────────────────────
     private final TareaRepository tareaRepo;
     private final AmistadRepository amistadRepo;
@@ -82,10 +82,19 @@ public class UsuarioService {
     public LoginResponseDto IniciarSesion(LoginDto email) {
         User usuario = repositorio.findByEmail(email.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
         if (passwordEncoder.matches(email.getPassword(), usuario.getPassword()) && usuario.isActivo()) {
             String token = jwtService.generarToken(usuario.getEmail());
-            return new LoginResponseDto(token, usuario.getNombre(), usuario.getEmail(), usuario.getRol().name(),
-                    usuario.getEstadoSuscripcion().name());
+
+            // 👇 Agregamos usuario.getApellido() como tercer parámetro 👇
+            return new LoginResponseDto(
+                    token,
+                    usuario.getNombre(),
+                    usuario.getApellido(), // <--- ESTE ES EL NUEVO DATO
+                    usuario.getEmail(),
+                    usuario.getRol().name(),
+                    usuario.getEstadoSuscripcion().name(),
+                    usuario.isPruebaConsumida());
         } else if (passwordEncoder.matches(email.getPassword(), usuario.getPassword()) && !usuario.isActivo()) {
             throw new CuentaInactivaException("Este usuario ha sido eliminado");
         } else {
@@ -130,7 +139,7 @@ public class UsuarioService {
         return "Suscripción actualizada a " + nuevoEstado.name();
     }
 
-    @Transactional // <-- Muy importante para que no quede la base de datos corrupta si falla
+    @Transactional
     public String eliminarUsuario(Long id) {
         User usuario = repositorio.findById(id)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
@@ -162,7 +171,45 @@ public class UsuarioService {
     }
 
     public User obtenerPorEmail(String email) {
-        return repositorio.findByEmail(email)
+        User usuario = repositorio.findByEmail(email)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+
+        // 👇 EL COBRADOR: Revisamos si su plan ya venció 👇
+        if (usuario.getEstadoSuscripcion() == EstadoSuscripcion.ACTIVO &&
+                usuario.getFechaFinPremium() != null &&
+                java.time.LocalDate.now().isAfter(usuario.getFechaFinPremium())) {
+
+            // Se le acabó el tiempo, lo devolvemos a INACTIVO
+            usuario.setEstadoSuscripcion(EstadoSuscripcion.INACTIVO);
+            usuario.setFechaFinPremium(null);
+            repositorio.save(usuario);
+        }
+
+        return usuario;
+    }
+
+    // ─────────────────────────────────────────
+    // NUEVO MÉTODO PARA GUARDAR ACTUALIZACIONES DEL USUARIO
+    // ─────────────────────────────────────────
+    public void guardarUsuario(User usuario) {
+        repositorio.save(usuario);
+    }
+
+    public String recuperarPassword(String email) {
+        User usuario = repositorio.findByEmail(email)
+                .orElseThrow(
+                        () -> new UsuarioNoEncontradoException("No existe ninguna cuenta asociada a este correo."));
+
+        // Generamos una contraseña temporal aleatoria de 8 caracteres
+        String nuevaPassword = java.util.UUID.randomUUID().toString().substring(0, 8);
+
+        // La encriptamos y la guardamos en la base de datos
+        usuario.setPassword(passwordEncoder.encode(nuevaPassword));
+        repositorio.save(usuario);
+
+        // Enviamos el correo
+        emailService.enviarCorreoRecuperacion(email, nuevaPassword);
+
+        return "Te hemos enviado un correo con una contraseña temporal.";
     }
 }

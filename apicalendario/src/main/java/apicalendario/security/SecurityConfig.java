@@ -33,8 +33,13 @@ public class SecurityConfig {
                                         return config;
                                 }))
                                 .authorizeHttpRequests(auth -> auth
+                                                // 🔥 RUTAS PÚBLICAS PERMITIDAS 🔥
                                                 .requestMatchers("/api/usuarios/registro", "/api/usuarios/login",
-                                                                "/api/pagos/webhook", "/error")
+                                                                "/api/usuarios/recuperar-password",
+                                                                "/api/soporte/enviar",
+                                                                "/api/pagos/crear-suscripcion",
+                                                                "/api/pagos/webhook",
+                                                                "/error")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
