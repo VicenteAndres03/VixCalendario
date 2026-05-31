@@ -31,7 +31,7 @@ function Proyectos() {
 
     const cargarProyectos = async () => {
         try {
-            const response = await axios.get("http://localhost:8080/api/proyectos/mis", {
+            const response = await axios.get("http://15.228.17.114:8080/api/proyectos/mis", {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const proyectosData = response.data;
@@ -39,7 +39,7 @@ function Proyectos() {
             const proyectosConProgreso = await Promise.all(
                 proyectosData.map(async (proy) => {
                     try {
-                        const resProgreso = await axios.get(`http://localhost:8080/api/proyectos/progreso/${proy.proyecto.id}`, {
+                        const resProgreso = await axios.get(`http://15.228.17.114:8080/api/proyectos/progreso/${proy.proyecto.id}`, {
                             headers: { Authorization: `Bearer ${token}` }
                         });
                         return { ...proy, progreso: resProgreso.data };
@@ -59,7 +59,7 @@ function Proyectos() {
 
     const cargarAmigos = async () => {
         try {
-            const response = await axios.get("http://localhost:8080/api/amigos/lista", {
+            const response = await axios.get("http://15.228.17.114:8080/api/amigos/lista", {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setAmigos(response.data)
@@ -71,7 +71,7 @@ function Proyectos() {
     const crearProyecto = async () => {
         if (!nuevoProyecto.nombre) return
         try {
-            await axios.post("http://localhost:8080/api/proyectos/crear", nuevoProyecto, {
+            await axios.post("http://15.228.17.114:8080/api/proyectos/crear", nuevoProyecto, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setMostrarModal(false)
@@ -87,7 +87,7 @@ function Proyectos() {
         if (!emailInvitado || !proyectoSeleccionado) return
         try {
             await axios.post(
-                `http://localhost:8080/api/proyectos/invitar/${proyectoSeleccionado.proyecto.id}?emailInvitado=${emailInvitado}`,
+                `http://15.228.17.114:8080/api/proyectos/invitar/${proyectoSeleccionado.proyecto.id}?emailInvitado=${emailInvitado}`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -106,7 +106,7 @@ function Proyectos() {
 
     const confirmarEliminacion = async () => {
         try {
-            await axios.delete(`http://localhost:8080/api/proyectos/eliminar/${modalConfirmacion.idProyecto}`, {
+            await axios.delete(`http://15.228.17.114:8080/api/proyectos/eliminar/${modalConfirmacion.idProyecto}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setMensaje({ tipo: "exito", texto: "Proyecto eliminado exitosamente" })

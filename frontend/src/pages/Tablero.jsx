@@ -55,14 +55,14 @@ function Tablero(){
 
     const cargarMetricas = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/metricas/personales", { headers: { Authorization: `Bearer ${token}` } })
+            const res = await axios.get("http://15.228.17.114:8080/api/metricas/personales", { headers: { Authorization: `Bearer ${token}` } })
             setRachaActual(res.data.rachaActual || 0)
         } catch (error) { console.error(error) }
     }
 
     const cargarTareas = async () => {
         try {
-            const res = await axios.get(`http://localhost:8080/api/tarea/dia?fecha=${fechaFormateada}`, { headers: { Authorization: `Bearer ${token}` } })
+            const res = await axios.get(`http://15.228.17.114:8080/api/tarea/dia?fecha=${fechaFormateada}`, { headers: { Authorization: `Bearer ${token}` } })
             const nuevasTareas = { POR_HACER: [], EN_PROCESO: [], TERMINADO: [] }
             res.data.forEach(t => nuevasTareas[t.estado]?.push({ ...t, id: String(t.id) }))
             setTareas(nuevasTareas)
@@ -110,7 +110,7 @@ function Tablero(){
         }
 
         try {
-            await axios.post("http://localhost:8080/api/tarea/guardar", nuevaTareaParaBD, { headers: { Authorization: `Bearer ${token}` } })
+            await axios.post("http://15.228.17.114:8080/api/tarea/guardar", nuevaTareaParaBD, { headers: { Authorization: `Bearer ${token}` } })
             setFormularioCrear({ ...formularioCrear, nombre: "", descripcion: "" }) 
             cargarTareas()
         } catch (err) { alert("Hubo un error con el servidor.") }
@@ -136,7 +136,7 @@ function Tablero(){
         if (!tareaEditando.nombre) return
         const descripcionSegura = tareaEditando.descripcion.trim() === "" ? "Sin descripción" : tareaEditando.descripcion;
         try {
-            await axios.put(`http://localhost:8080/api/tarea/${tareaEditandoId}`, { ...tareaEditando, descripcion: descripcionSegura }, { headers: { Authorization: `Bearer ${token}` } })
+            await axios.put(`http://15.228.17.114:8080/api/tarea/${tareaEditandoId}`, { ...tareaEditando, descripcion: descripcionSegura }, { headers: { Authorization: `Bearer ${token}` } })
             setMostrarModalEditar(false); cargarTareas()
         } catch (err) { console.error(err) }
     }
@@ -148,7 +148,7 @@ function Tablero(){
 
     const confirmarEliminacion = async () => {
         try { 
-            await axios.delete(`http://localhost:8080/api/tarea/${modalConfirmacion.idTarea}`, { headers: { Authorization: `Bearer ${token}` } }); 
+            await axios.delete(`http://15.228.17.114:8080/api/tarea/${modalConfirmacion.idTarea}`, { headers: { Authorization: `Bearer ${token}` } }); 
             cargarTareas();
             setModalConfirmacion({ visible: false, idTarea: null }) 
         } catch (err) { 
@@ -171,7 +171,7 @@ function Tablero(){
             destino.splice(destination.index, 0, tarea)
             setTareas(prev => ({ ...prev, [source.droppableId]: origen, [destination.droppableId]: destino }))
             try {
-                await axios.patch(`http://localhost:8080/api/tarea/${tarea.id}/estado?nuevoEstado=${destination.droppableId}&fecha=${fechaFormateada}`, {}, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.patch(`http://15.228.17.114:8080/api/tarea/${tarea.id}/estado?nuevoEstado=${destination.droppableId}&fecha=${fechaFormateada}`, {}, { headers: { Authorization: `Bearer ${token}` } })
                 if (destination.droppableId === "TERMINADO") cargarMetricas()
             } catch (err) { cargarTareas() }
         }

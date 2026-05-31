@@ -18,7 +18,7 @@ function TableroPublico() {
         const cargarDatosPublicos = async () => {
             try {
                 setCargando(true)
-                const res = await axios.get(`http://localhost:8080/api/public/proyectos/${tokenPublico}`)
+                const res = await axios.get(`http://15.228.17.114:8080/api/public/proyectos/${tokenPublico}`)
                 
                 setNombreProyecto(res.data.nombreProyecto || "Tablero de Cliente")
                 

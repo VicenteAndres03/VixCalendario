@@ -50,7 +50,7 @@ function Perfil() {
 
     const cargarMetricas = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/metricas/personales", {
+            const res = await axios.get("http://15.228.17.114:8080/api/metricas/personales", {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setRachaActual(res.data.rachaActual || 0)

@@ -71,7 +71,7 @@ function Plan() {
     const canjearMesGratis = async () => {
         try {
             setCargandoPrueba(true)
-            const res = await axios.post("http://localhost:8080/api/usuarios/canjear-prueba", {}, {
+            const res = await axios.post("http://15.228.17.114:8080/api/usuarios/canjear-prueba", {}, {
                 headers: { Authorization: `Bearer ${token}` }
             })
 

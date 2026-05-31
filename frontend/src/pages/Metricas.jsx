@@ -177,10 +177,10 @@ function Metricas() {
     const cargarDatos = async () => {
         try {
             const [resPersonal, resProyectos] = await Promise.all([
-                axios.get("http://localhost:8080/api/metricas/personales", {
+                axios.get("http://15.228.17.114:8080/api/metricas/personales", {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                axios.get("http://localhost:8080/api/metricas/proyectos", {
+                axios.get("http://15.228.17.114:8080/api/metricas/proyectos", {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ])
