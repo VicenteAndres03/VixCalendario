@@ -49,7 +49,7 @@ public class PagoController {
 
             PreapprovalCreateRequest request = PreapprovalCreateRequest.builder()
                     .payerEmail(emailComprador)
-                    .backUrl("http://localhost:5173/perfil?pago=exitoso")
+                    .backUrl("https://vix-flow.com/perfil?pago=exitoso")
                     .reason("Suscripción Premium Vix-Flow")
                     .autoRecurring(autoRecurring)
                     .status("pending")

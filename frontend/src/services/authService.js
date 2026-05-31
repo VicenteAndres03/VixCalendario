@@ -1,7 +1,6 @@
 import axios from "axios"
 
-const API_URL = "http://localhost:8080/api"
-
+const API_URL = "https://nonciliate-elois-crapulously.ngrok-free.dev/api";
 export const registrar = async (datos) => {
     const response = await axios.post(`${API_URL}/usuarios/registro`, datos)
     return response.data

@@ -39,7 +39,7 @@ function Footer() {
                     {/* Redes Sociales */}
                     <div className="flex gap-4">
                         {/* Instagram */}
-                        <motion.a whileHover={{ scale: 1.1, y: -2 }} href="https://instagram.com" target="_blank" rel="noreferrer" 
+                        <motion.a whileHover={{ scale: 1.1, y: -2 }} href="https://www.instagram.com/vicesdev/" target="_blank" rel="noreferrer" 
                             className={`${darkMode ? "text-gray-400 hover:text-pink-500" : "text-gray-500 hover:text-pink-600"} transition-colors`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -50,7 +50,7 @@ function Footer() {
                         </motion.a>
 
                         {/* TikTok */}
-                        <motion.a whileHover={{ scale: 1.1, y: -2 }} href="https://tiktok.com" target="_blank" rel="noreferrer"
+                        <motion.a whileHover={{ scale: 1.1, y: -2 }} href="https://www.tiktok.com/@vicesdev" target="_blank" rel="noreferrer"
                             className={`${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"} transition-colors`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -59,7 +59,7 @@ function Footer() {
                         </motion.a>
 
                         {/* YouTube */}
-                        <motion.a whileHover={{ scale: 1.1, y: -2 }} href="https://youtube.com" target="_blank" rel="noreferrer"
+                        <motion.a whileHover={{ scale: 1.1, y: -2 }} href="https://www.youtube.com/@VixDevcl" target="_blank" rel="noreferrer"
                             className={`${darkMode ? "text-gray-400 hover:text-red-500" : "text-gray-500 hover:text-red-600"} transition-colors`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

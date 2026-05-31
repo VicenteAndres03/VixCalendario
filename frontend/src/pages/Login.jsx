@@ -2,7 +2,7 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { login, recuperarPasswordService } from "../services/authService"
 import { useNavigate, Link } from "react-router-dom"
-import logoVix from "../assets/Hero.png"
+import logoVix from "../assets/hero.png"
 
 function Login() {
     const navigate = useNavigate()

@@ -26,14 +26,18 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .cors(cors -> cors.configurationSource(request -> {
                                         CorsConfiguration config = new CorsConfiguration();
-                                        config.setAllowedOrigins(List.of("http://localhost:5173"));
+                                        // Aquí agregamos tu dominio de producción
+                                        config.setAllowedOrigins(List.of(
+                                                        "http://localhost:5173",
+                                                        "https://vix-flow.com",
+                                                        "https://www.vix-flow.com"));
                                         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
                                         config.setAllowedHeaders(List.of("*"));
                                         config.setAllowCredentials(true);
                                         return config;
                                 }))
                                 .authorizeHttpRequests(auth -> auth
-                                                // 🔥 RUTAS PÚBLICAS PERMITIDAS 🔥
+                                                // RUTAS PÚBLICAS PERMITIDAS
                                                 .requestMatchers("/api/usuarios/registro", "/api/usuarios/login",
                                                                 "/api/usuarios/recuperar-password",
                                                                 "/api/soporte/enviar",

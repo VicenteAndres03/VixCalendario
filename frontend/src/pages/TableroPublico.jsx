@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom"
 import { motion } from "framer-motion"
-import logoVix from "../assets/Hero.png"
+import logoVix from "../assets/hero.png"
 import axios from "axios"
 
 function TableroPublico() {

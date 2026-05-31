@@ -1,7 +1,7 @@
 import { useState, useContext } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate, useLocation, Link } from "react-router-dom"
-import logoVix from "../assets/Hero.png" 
+import logoVix from "../assets/hero.png" 
 import { ThemeContext } from "../context/ThemeContext"
 
 function Navbar() {

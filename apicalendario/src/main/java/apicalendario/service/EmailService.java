@@ -51,7 +51,7 @@ public class EmailService {
         mensaje.setSubject("Invitación de equipo: Únete al proyecto \"" + nombreProyecto + "\" 🤝");
 
         // Enlace que redirigirá a tu frontend en React
-        String urlAceptar = "http://localhost:5173/aceptar-invitacion/" + token;
+        String urlAceptar = "https://vix-flow.com/aceptar-invitacion/" + token;
 
         mensaje.setText("Hola,\n\n"
                 + "¡Excelentes noticias! Has sido invitado a formar parte del proyecto '" + nombreProyecto
