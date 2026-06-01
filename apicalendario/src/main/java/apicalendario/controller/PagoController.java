@@ -56,7 +56,7 @@ public class PagoController {
                     .reason("Suscripción Premium Vix-Flow")
                     .autoRecurring(autoRecurring)
                     .status("pending")
-                    .externalReference(email) // <-- CORRECCIÓN AÑADIDA
+                    .externalReference(email)
                     .build();
 
             Preapproval preapproval = client.create(request);
@@ -107,32 +107,81 @@ public class PagoController {
         }
     }
 
+    /**
+     * CORRECCIÓN PRINCIPAL:
+     * MercadoPago puede enviar el webhook de 3 formas distintas:
+     * 1. Con `type` e `id` como query params (formato antiguo)
+     * 2. Con todo en el body como JSON (formato nuevo)
+     * 3. Mixto: type en query param, id en el body
+     *
+     * Antes el código fallaba silenciosamente cuando `dataId` era null,
+     * respondía 200 OK y MP lo daba por procesado sin haber hecho nada.
+     */
     @PostMapping("/webhook")
     public ResponseEntity<String> recibirWebhook(
             @RequestBody(required = false) Map<String, Object> payload,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String id) {
         try {
-            System.out.println("🔔 Webhook recibido - type: " + type + " id: " + id);
+            // ── PASO 1: Asegurar que el token de MP esté siempre configurado ──
+            // Necesario porque este endpoint se llama desde MP directamente,
+            // no necesariamente después del @PostConstruct del Controller.
+            MercadoPagoConfig.setAccessToken(accessToken);
 
-            String dataId = id;
-            if (dataId == null && payload != null && payload.get("data") != null) {
-                Map<String, Object> data = (Map<String, Object>) payload.get("data");
-                dataId = data.get("id").toString();
+            System.out.println("🔔 Webhook recibido - type: " + type + " | id: " + id
+                    + " | body: " + payload);
+
+            // ── PASO 2: Extraer dataId de TODAS las fuentes posibles ──
+            String dataId = id; // primero intentamos el query param
+
+            if (dataId == null && payload != null) {
+                // Formato nuevo: { "data": { "id": "..." } }
+                Object dataObj = payload.get("data");
+                if (dataObj instanceof Map) {
+                    Object idObj = ((Map<?, ?>) dataObj).get("id");
+                    if (idObj != null) {
+                        dataId = idObj.toString();
+                    }
+                }
+                // Algunos eventos lo mandan directo en la raíz del body
+                if (dataId == null && payload.get("id") != null) {
+                    dataId = payload.get("id").toString();
+                }
             }
 
+            // ── PASO 3: Extraer el tipo del body si no vino en query param ──
             String tipo = type;
             if (tipo == null && payload != null) {
                 tipo = (String) payload.get("type");
+                // También puede venir como "action" en algunos eventos de MP
+                if (tipo == null) {
+                    tipo = (String) payload.get("action");
+                }
             }
 
-            if ("subscription_preapproval".equals(tipo) && dataId != null) {
+            System.out.println("🔔 Webhook normalizado - tipo: " + tipo + " | dataId: " + dataId);
+
+            // ── PASO 4: Procesar solo si tenemos los datos mínimos ──
+            if (dataId == null) {
+                // CRÍTICO: Loguear para que puedas ver en logs que llegó sin ID
+                System.out.println("⚠️ Webhook recibido sin dataId. Payload completo: " + payload
+                        + " | type: " + type + " | id: " + id);
+                // Aún así respondemos 200 para que MP no reintente infinitamente
+                return ResponseEntity.ok("Recibido sin datos procesables");
+            }
+
+            if ("subscription_preapproval".equals(tipo)) {
                 pagoService.procesarEventoSuscripcion(dataId);
+            } else {
+                System.out.println("ℹ️ Tipo de evento no procesado: " + tipo);
             }
 
             return ResponseEntity.ok("Recibido");
+
         } catch (Exception e) {
             System.out.println("❌ Error webhook: " + e.getMessage());
+            e.printStackTrace();
+            // Siempre 200 para evitar reintentos infinitos de MercadoPago
             return ResponseEntity.ok("Recibido");
         }
     }

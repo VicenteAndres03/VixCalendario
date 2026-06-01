@@ -24,51 +24,110 @@ function Perfil() {
     const apellidoGuardado = localStorage.getItem("apellido") || ""
     const emailGuardado = localStorage.getItem("email") || ""
     const rolGuardado = localStorage.getItem("rol") || "USER"
-    const suscripcion = localStorage.getItem("suscripcion") || "INACTIVO"
-
+ 
+    /**
+     * CORRECCIÓN: El estado de suscripción se guarda en estado de React,
+     * no solo en localStorage. Esto permite actualizarlo sin recargar la página
+     * y refleja siempre el valor más reciente del backend.
+     */
+    const [suscripcion, setSuscripcion] = useState(
+        localStorage.getItem("suscripcion") || "INACTIVO"
+    )
+ 
     // Estados
     const [formData, setFormData] = useState({ nombre: nombreGuardado, apellido: apellidoGuardado, password: "" })
     const [fotoPerfil, setFotoPerfil] = useState(localStorage.getItem("fotoPerfil") || null)
     const [editandoNombre, setEditandoNombre] = useState(false)
     const [mensaje, setMensaje] = useState({ tipo: "", texto: "" })
     const [cargando, setCargando] = useState(false)
-
-    // 🔥 NUEVO ESTADO PARA EL MODAL DE ELIMINAR CUENTA 🔥
     const [modalConfirmacion, setModalConfirmacion] = useState(false)
     
     // 🏆 Estado para la Gamificación
     const [rachaHistorica, setRachaHistorica] = useState(0)
     const [rachaActual, setRachaActual] = useState(0)
-
+ 
     useEffect(() => {
-        const queryParams = new URLSearchParams(window.location.search);
+        /**
+         * CORRECCIÓN: Siempre sincronizamos el estado de suscripción contra el backend
+         * al cargar el perfil, no solo cuando llega el query param ?pago=exitoso.
+         *
+         * Esto corrige el caso donde el usuario llega al perfil desde otra ruta
+         * (ej: desde el calendario) con el localStorage desactualizado.
+         */
+        sincronizarSuscripcion()
+ 
+        const queryParams = new URLSearchParams(window.location.search)
         if (queryParams.get("pago") === "exitoso") {
-            setMensaje({ tipo: "exito", texto: "¡Pago completado! Estamos validando tu suscripción Premium 💎" });
-            
-            // <-- CORRECCIÓN: Polling para sincronizar el estado desde Mercado Pago
-            let intentos = 0;
-            const intervalo = setInterval(async () => {
-                intentos++;
-                try {
-                    const res = await axios.get("https://api.vix-flow.com/api/usuarios/perfil", {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (res.data.estadoSuscripcion === "ACTIVO") {
-                        localStorage.setItem("suscripcion", "ACTIVO");
-                        clearInterval(intervalo);
-                        // Limpiamos la URL para evitar recargas raras
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        window.location.reload(); 
-                    }
-                } catch (error) {
-                    console.error("Error sincronizando", error);
-                }
-                if (intentos > 5) clearInterval(intervalo); // Cortar después de 15 seg
-            }, 3000);
+            setMensaje({ tipo: "exito", texto: "¡Pago completado! Estamos validando tu suscripción Premium 💎" })
+            iniciarPolling()
         }
+ 
         cargarMetricas()
     }, [])
-
+ 
+    /**
+     * Consulta el backend UNA vez y actualiza el localStorage + estado React
+     * si el valor cambió. Se llama al montar el componente siempre.
+     */
+    const sincronizarSuscripcion = async () => {
+        try {
+            const res = await axios.get("https://api.vix-flow.com/api/usuarios/perfil", {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            const estadoBackend = res.data.estadoSuscripcion
+            if (estadoBackend && estadoBackend !== localStorage.getItem("suscripcion")) {
+                console.log(`🔄 Suscripción sincronizada: ${localStorage.getItem("suscripcion")} → ${estadoBackend}`)
+                localStorage.setItem("suscripcion", estadoBackend)
+                setSuscripcion(estadoBackend)
+            }
+        } catch (error) {
+            console.error("Error al sincronizar suscripción:", error)
+        }
+    }
+ 
+    /**
+     * CORRECCIÓN: El polling ahora hace hasta 10 intentos (30 segundos)
+     * en lugar de 5 (15 segundos). Los webhooks de MP pueden tardar
+     * entre 5 y 25 segundos en llegar y procesarse.
+     */
+    const iniciarPolling = () => {
+        let intentos = 0
+        const MAX_INTENTOS = 10 // 30 segundos total
+ 
+        const intervalo = setInterval(async () => {
+            intentos++
+            console.log(`🔄 Polling intento ${intentos}/${MAX_INTENTOS}...`)
+ 
+            try {
+                const res = await axios.get("https://api.vix-flow.com/api/usuarios/perfil", {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+ 
+                if (res.data.estadoSuscripcion === "ACTIVO") {
+                    localStorage.setItem("suscripcion", "ACTIVO")
+                    setSuscripcion("ACTIVO")
+                    clearInterval(intervalo)
+                    // Limpiamos el query param sin recargar la página
+                    window.history.replaceState({}, document.title, window.location.pathname)
+                    setMensaje({ tipo: "exito", texto: "¡Suscripción Premium activada exitosamente! 💎" })
+                    console.log("✅ Suscripción activada y sincronizada")
+                }
+            } catch (error) {
+                console.error("Error en polling:", error)
+            }
+ 
+            if (intentos >= MAX_INTENTOS) {
+                clearInterval(intervalo)
+                // Si después de 30 seg sigue sin activarse, informamos al usuario
+                setMensaje({
+                    tipo: "error",
+                    texto: "Tu pago está siendo procesado. Si no ves los cambios en unos minutos, recarga la página."
+                })
+                console.warn("⚠️ Polling agotado sin detectar activación")
+            }
+        }, 3000)
+    }
+ 
     const cargarMetricas = async () => {
         try {
             const res = await axios.get("https://api.vix-flow.com/api/metricas/personales", {
@@ -80,22 +139,21 @@ function Perfil() {
             console.error("Error al cargar métricas para el perfil:", error)
         }
     }
-
+ 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
-
-    // Función para manejar la foto de perfil en el navegador
+ 
     const handleFotoChange = (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files[0]
         if (file) {
-            const reader = new FileReader();
+            const reader = new FileReader()
             reader.onloadend = () => {
-                setFotoPerfil(reader.result);
-                localStorage.setItem("fotoPerfil", reader.result);
-            };
-            reader.readAsDataURL(file);
+                setFotoPerfil(reader.result)
+                localStorage.setItem("fotoPerfil", reader.result)
+            }
+            reader.readAsDataURL(file)
         }
-    };
-
+    }
+ 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setMensaje({ tipo: "", texto: "" })
@@ -106,19 +164,18 @@ function Perfil() {
         if (formData.password.length < 8) {
             return setMensaje({ tipo: "error", texto: "La contraseña debe tener al menos 8 caracteres." })
         }
-
+ 
         setCargando(true)
         try {
             await actualizarPerfil({ nombre: formData.nombre, apellido: formData.apellido, password: formData.password }, emailGuardado, token)
             
-            // Actualizamos en el local storage
             localStorage.setItem("nombre", formData.nombre)
             localStorage.setItem("apellido", formData.apellido)
             
             setMensaje({ tipo: "exito", texto: "¡Tus datos han sido actualizados exitosamente!" })
-            setFormData({ ...formData, password: "" }) // Limpiamos la clave por seguridad
+            setFormData({ ...formData, password: "" })
         } catch (error) {
-            setMensaje({ tipo: "error", texto: error.response?.data?.mensaje || "Hubo un problema al actualizar el perfil." })
+            setMensaje({ tipo: "error", texto: "Error al guardar los cambios." })
         } finally {
             setCargando(false)
         }

@@ -10,7 +10,7 @@ function Registro(){
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     
-    // NUEVO ESTADO: Para el checkbox de los términos
+    // ESTADO: Para el checkbox de los términos
     const [aceptaTerminos, setAceptaTerminos] = useState(false)
     
     const { darkMode, setDarkMode } = useContext(ThemeContext)
@@ -20,9 +20,16 @@ function Registro(){
     const navigate = useNavigate()
 
     const handleRegistro = async () => {
-        // NUEVA VALIDACIÓN: Revisar que los términos estén aceptados
+        // VALIDACIÓN: Revisar que los términos estén aceptados
         if (!aceptaTerminos) {
             setError("Debes aceptar los Términos y Condiciones para registrarte.")
+            setMensaje("")
+            return
+        }
+
+        // NUEVA VALIDACIÓN FRONTEND: Contraseña de mínimo 8 caracteres
+        if (password.length < 8) {
+            setError("La contraseña es muy corta. Debe tener al menos 8 caracteres.")
             setMensaje("")
             return
         }
@@ -38,7 +45,7 @@ function Registro(){
             }, 2000)
 
         } catch (err) {
-            setError(err.response?.data?.mensaje || "Error al registrarse")
+            setError(err.response?.data?.mensaje || "Error al registrarse. Verifica tus datos.")
             setMensaje("")
         }
     }
@@ -148,9 +155,21 @@ function Registro(){
                             className={`w-full ${darkMode ? "bg-gray-950/50 border-gray-800 text-white focus:border-cyan-500" : "bg-gray-50 border-gray-200 text-gray-900 focus:border-cyan-500"} border rounded-xl px-4 py-3 focus:outline-none transition-all duration-300`}
                             placeholder="••••••••"
                         />
+                        {/* NUEVO: Contador visual de caracteres */}
+                        <div className="flex justify-between items-center mt-2 px-1">
+                            <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+                                Mínimo 8 caracteres
+                            </span>
+                            <span className={`text-xs font-bold transition-colors ${
+                                password.length === 0 ? (darkMode ? "text-gray-600" : "text-gray-400") :
+                                password.length >= 8 ? "text-green-500" : "text-red-500"
+                            }`}>
+                                {password.length} / 8
+                            </span>
+                        </div>
                     </div>
 
-                    {/* NUEVO: Checkbox de Términos y Condiciones */}
+                    {/* Checkbox de Términos y Condiciones */}
                     <div className="mb-6 flex items-start gap-3">
                         <div className="flex items-center h-5">
                             <input
