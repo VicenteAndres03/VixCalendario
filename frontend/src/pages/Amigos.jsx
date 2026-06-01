@@ -83,7 +83,7 @@ function Amigos() {
 
         setCargando(true)
         try {
-            const response = await axios.post("http://15.228.17.114:8080/api/amigos/solicitar", 
+            const response = await axios.post("https://api.vix-flow.com/api/amigos/solicitar", 
                 { emailReceptor: emailAmigo }, 
                 { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -110,7 +110,7 @@ function Amigos() {
 
     const responderSolicitud = async (id, accion) => {
         try {
-            await axios.put(`http://15.228.17.114:8080/api/amigos/${accion}/${id}`, {}, {
+            await axios.put(`https://api.vix-flow.com/api/amigos/${accion}/${id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             cargarDatos() 

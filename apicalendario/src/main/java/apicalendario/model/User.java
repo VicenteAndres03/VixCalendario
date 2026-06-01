@@ -77,4 +77,7 @@ public class User {
     // Añade esta variable a tu modelo User
     private LocalDate fechaFinPremium;
 
+    @Column(nullable = true)
+    private String mercadoPagoSuscripcionId;
+
 }

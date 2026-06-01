@@ -6,7 +6,9 @@ import com.mercadopago.client.preapproval.PreapprovalClient;
 import com.mercadopago.client.preapproval.PreapprovalCreateRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.resources.preapproval.Preapproval;
+import apicalendario.service.PagoService;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +19,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pagos")
+@RequiredArgsConstructor
 public class PagoController {
 
     @Value("${mercadopago.access-token}")
     private String accessToken;
+
+    private final PagoService pagoService;
 
     @PostConstruct
     public void init() {
@@ -32,14 +37,6 @@ public class PagoController {
         try {
             PreapprovalClient client = new PreapprovalClient();
 
-            // 🔥 TRUCO PARA PRUEBAS: Evitar el error de "comprarse a sí mismo"
-            String emailComprador = email;
-            if (email.contains("vice.pachecoa")) {
-                // Le pasamos un correo dummy a Mercado Pago para que nos deje generar el link
-                emailComprador = "cliente_prueba_999@test.com";
-            }
-
-            // Usamos la clase correcta con "Create"
             PreApprovalAutoRecurringCreateRequest autoRecurring = PreApprovalAutoRecurringCreateRequest.builder()
                     .frequency(1)
                     .frequencyType("months")
@@ -48,7 +45,7 @@ public class PagoController {
                     .build();
 
             PreapprovalCreateRequest request = PreapprovalCreateRequest.builder()
-                    .payerEmail(emailComprador)
+                    .payerEmail(email)
                     .backUrl("https://vix-flow.com/perfil?pago=exitoso")
                     .reason("Suscripción Premium Vix-Flow")
                     .autoRecurring(autoRecurring)
@@ -63,10 +60,8 @@ public class PagoController {
             return ResponseEntity.ok(responseData);
 
         } catch (MPApiException apiException) {
-            System.out.println("❌ MERCADO PAGO RECHAZÓ LA PETICIÓN. Motivo exacto: ");
-            System.out.println(apiException.getApiResponse().getContent());
+            System.out.println("❌ Error Mercado Pago: " + apiException.getApiResponse().getContent());
             return ResponseEntity.internalServerError().build();
-
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
@@ -74,8 +69,32 @@ public class PagoController {
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<String> recibirWebhook(@RequestBody Map<String, Object> payload) {
-        System.out.println("🔔 Notificación recibida de Mercado Pago: " + payload);
-        return ResponseEntity.ok("Recibido");
+    public ResponseEntity<String> recibirWebhook(
+            @RequestBody(required = false) Map<String, Object> payload,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String id) {
+        try {
+            System.out.println("🔔 Webhook recibido - type: " + type + " - id: " + id);
+
+            String dataId = id;
+            if (dataId == null && payload != null && payload.get("data") != null) {
+                Map<String, Object> data = (Map<String, Object>) payload.get("data");
+                dataId = data.get("id").toString();
+            }
+
+            String tipo = type;
+            if (tipo == null && payload != null) {
+                tipo = (String) payload.get("type");
+            }
+
+            if ("subscription_preapproval".equals(tipo) && dataId != null) {
+                pagoService.procesarEventoSuscripcion(dataId);
+            }
+
+            return ResponseEntity.ok("Recibido");
+        } catch (Exception e) {
+            System.out.println("❌ Error en webhook: " + e.getMessage());
+            return ResponseEntity.ok("Recibido");
+        }
     }
 }

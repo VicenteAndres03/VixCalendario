@@ -33,7 +33,7 @@ function Calendario(){
 
     const cargarTodasLasTareas = async () => {
         try {
-            const response = await axios.get(`http://15.228.17.114:8080/api/tarea/todas`, {
+            const response = await axios.get(`https://api.vix-flow.com/api/tarea/todas`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setTodasLasTareas(response.data)
@@ -44,7 +44,7 @@ function Calendario(){
 
     const cargarMetricas = async () => {
         try {
-            const res = await axios.get("http://15.228.17.114:8080/api/metricas/personales", {
+            const res = await axios.get("https://api.vix-flow.com/api/metricas/personales", {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setRachaActual(res.data.rachaActual || 0)

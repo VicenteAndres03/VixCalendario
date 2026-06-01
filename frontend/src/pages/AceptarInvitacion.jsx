@@ -25,7 +25,7 @@ function AceptarInvitacion() {
             }
 
             try {
-                const response = await axios.post(`http://15.228.17.114:8080/api/proyectos/aceptar-invitacion/${token}`, {}, {
+                const response = await axios.post(`https://api.vix-flow.com/api/proyectos/aceptar-invitacion/${token}`, {}, {
                     headers: { Authorization: `Bearer ${authToken}` }
                 });
                 setExito(true);

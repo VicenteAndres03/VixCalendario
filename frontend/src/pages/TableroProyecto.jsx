@@ -52,10 +52,10 @@ function TableroProyecto() {
     const cargarDatos = async () => {
         try {
             const [resTareas, resMiembros] = await Promise.all([
-                axios.get(`http://15.228.17.114:8080/api/tareas-proyecto/proyecto/${id}`, {
+                axios.get(`https://api.vix-flow.com/api/tareas-proyecto/proyecto/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                axios.get(`http://15.228.17.114:8080/api/proyectos/miembros/${id}`, {
+                axios.get(`https://api.vix-flow.com/api/proyectos/miembros/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ])
@@ -105,7 +105,7 @@ function TableroProyecto() {
 
         try {
             await axios.patch(
-                `http://15.228.17.114:8080/api/tareas-proyecto/${tarea.id}/estado?nuevoEstado=${destination.droppableId}`,
+                `https://api.vix-flow.com/api/tareas-proyecto/${tarea.id}/estado?nuevoEstado=${destination.droppableId}`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -119,7 +119,7 @@ function TableroProyecto() {
         if (!nuevaTarea.nombre || !nuevaTarea.fechaInicio || !nuevaTarea.fechaLimite) return
         
         try {
-            await axios.post(`http://15.228.17.114:8080/api/tareas-proyecto/crear/${id}`, nuevaTarea, {
+            await axios.post(`https://api.vix-flow.com/api/tareas-proyecto/crear/${id}`, nuevaTarea, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setNuevaTarea({ nombre: "", descripcion: "", fechaInicio: "", fechaLimite: "", emailAsignadoA: "" })
@@ -133,7 +133,7 @@ function TableroProyecto() {
         if (!window.confirm("¿Estás seguro de que deseas eliminar esta tarea permanentemente?")) return
         
         try {
-            await axios.delete(`http://15.228.17.114:8080/api/tareas-proyecto/eliminar/${tareaId}`, {
+            await axios.delete(`https://api.vix-flow.com/api/tareas-proyecto/eliminar/${tareaId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             cargarDatos() 
@@ -152,7 +152,7 @@ function TableroProyecto() {
 
     const descargarReporte = async () => {
         try {
-            const res = await axios.get(`http://15.228.17.114:8080/api/reportes/proyecto/${id}`, {
+            const res = await axios.get(`https://api.vix-flow.com/api/reportes/proyecto/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
                 responseType: 'blob'
             })

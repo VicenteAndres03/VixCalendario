@@ -28,7 +28,7 @@ function Habitos() {
 
     const cargarHabitos = async () => {
         try {
-            const res = await axios.get("http://15.228.17.114:8080/api/habitos", {
+            const res = await axios.get("https://api.vix-flow.com/api/habitos", {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setHabitos(res.data)
@@ -39,7 +39,7 @@ function Habitos() {
         e.preventDefault()
         if (!nuevoHabito.trim()) return
         try {
-            await axios.post("http://15.228.17.114:8080/api/habitos", { nombre: nuevoHabito }, {
+            await axios.post("https://api.vix-flow.com/api/habitos", { nombre: nuevoHabito }, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setNuevoHabito("")
@@ -49,7 +49,7 @@ function Habitos() {
 
     const toggleHabito = async (habitoId, fecha) => {
         try {
-            await axios.patch(`http://15.228.17.114:8080/api/habitos/${habitoId}/toggle?fecha=${fecha}`, {}, {
+            await axios.patch(`https://api.vix-flow.com/api/habitos/${habitoId}/toggle?fecha=${fecha}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             cargarHabitos() // Recargamos para ver el cuadro pintado
@@ -63,7 +63,7 @@ function Habitos() {
 
     const confirmarEliminacion = async () => {
         try {
-            await axios.delete(`http://15.228.17.114:8080/api/habitos/${modalConfirmacion.idHabito}`, {
+            await axios.delete(`https://api.vix-flow.com/api/habitos/${modalConfirmacion.idHabito}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             cargarHabitos()
