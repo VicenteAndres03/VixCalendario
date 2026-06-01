@@ -26,7 +26,6 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .cors(cors -> cors.configurationSource(request -> {
                                         CorsConfiguration config = new CorsConfiguration();
-                                        // Aquí agregamos tu dominio de producción
                                         config.setAllowedOrigins(List.of(
                                                         "http://localhost:5173",
                                                         "https://vix-flow.com",
@@ -37,14 +36,18 @@ public class SecurityConfig {
                                         return config;
                                 }))
                                 .authorizeHttpRequests(auth -> auth
-                                                // RUTAS PÚBLICAS PERMITIDAS
-                                                .requestMatchers("/api/usuarios/registro", "/api/usuarios/login",
+                                                // RUTAS PÚBLICAS
+                                                .requestMatchers(
+                                                                "/api/usuarios/registro",
+                                                                "/api/usuarios/login",
                                                                 "/api/usuarios/recuperar-password",
                                                                 "/api/soporte/enviar",
                                                                 "/api/pagos/crear-suscripcion",
                                                                 "/api/pagos/webhook",
+                                                                "/api/public/proyectos/**",
                                                                 "/error")
                                                 .permitAll()
+                                                // TODAS LAS DEMÁS REQUIEREN TOKEN
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

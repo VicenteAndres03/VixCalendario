@@ -1,12 +1,16 @@
 package apicalendario.controller;
 
+import apicalendario.model.EstadoSuscripcion;
+import apicalendario.model.User;
+import apicalendario.repository.UsuarioRepository;
+import apicalendario.security.JwtService;
+import apicalendario.service.PagoService;
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.preapproval.PreApprovalAutoRecurringCreateRequest;
 import com.mercadopago.client.preapproval.PreapprovalClient;
 import com.mercadopago.client.preapproval.PreapprovalCreateRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.resources.preapproval.Preapproval;
-import apicalendario.service.PagoService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +30,8 @@ public class PagoController {
     private String accessToken;
 
     private final PagoService pagoService;
+    private final UsuarioRepository usuarioRepo;
+    private final JwtService jwtService;
 
     @PostConstruct
     public void init() {
@@ -60,11 +66,43 @@ public class PagoController {
             return ResponseEntity.ok(responseData);
 
         } catch (MPApiException apiException) {
-            System.out.println("❌ Error Mercado Pago: " + apiException.getApiResponse().getContent());
+            System.out.println("❌ Error MP: " + apiException.getApiResponse().getContent());
             return ResponseEntity.internalServerError().build();
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/cancelar-suscripcion")
+    public ResponseEntity<String> cancelarSuscripcion(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.substring(7);
+            String email = jwtService.extraerEmail(token);
+
+            User usuario = usuarioRepo.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            String suscripcionId = usuario.getMercadoPagoSuscripcionId();
+
+            if (suscripcionId == null) {
+                return ResponseEntity.badRequest()
+                        .body("No tienes una suscripción activa para cancelar.");
+            }
+
+            pagoService.cancelarSuscripcion(suscripcionId);
+
+            usuario.setEstadoSuscripcion(EstadoSuscripcion.INACTIVO);
+            usuario.setFechaFinPremium(null);
+            usuario.setMercadoPagoSuscripcionId(null);
+            usuarioRepo.save(usuario);
+
+            return ResponseEntity.ok("Tu suscripción Premium ha sido cancelada exitosamente.");
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error al cancelar la suscripción.");
         }
     }
 
@@ -74,7 +112,7 @@ public class PagoController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String id) {
         try {
-            System.out.println("🔔 Webhook recibido - type: " + type + " - id: " + id);
+            System.out.println("🔔 Webhook recibido - type: " + type + " id: " + id);
 
             String dataId = id;
             if (dataId == null && payload != null && payload.get("data") != null) {
@@ -93,7 +131,7 @@ public class PagoController {
 
             return ResponseEntity.ok("Recibido");
         } catch (Exception e) {
-            System.out.println("❌ Error en webhook: " + e.getMessage());
+            System.out.println("❌ Error webhook: " + e.getMessage());
             return ResponseEntity.ok("Recibido");
         }
     }
