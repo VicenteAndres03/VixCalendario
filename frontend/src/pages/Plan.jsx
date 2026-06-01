@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { ThemeContext } from "../context/ThemeContext"
 import axios from "axios"
-import { crearSuscripcion } from "../services/authService" // 🔥 Importación correcta 🔥
+import { crearSuscripcion } from "../services/authService"
 
 function Plan() {
     const { darkMode } = useContext(ThemeContext)
@@ -12,13 +12,13 @@ function Plan() {
     const token = localStorage.getItem("token")
     const suscripcionActual = localStorage.getItem("suscripcion") || "INACTIVO"
     
-    // Leemos si el usuario ya consumió su mes de prueba (lo ideal es guardarlo en el login)
     const [pruebaConsumida, setPruebaConsumida] = useState(
         () => localStorage.getItem("pruebaConsumida") === "true"
     )
     
     const [cargandoPago, setCargandoPago] = useState(false)
     const [cargandoPrueba, setCargandoPrueba] = useState(false)
+    const [cargandoCancelar, setCargandoCancelar] = useState(false)
 
     const caracteristicasGratis = [
         "📅 Calendario personal interactivo",
@@ -37,58 +37,70 @@ function Plan() {
         "⚡ Soporte prioritario y alta disponibilidad"
     ]
 
-    // 🔥 Función corregida para enviar el token y conectarse a Mercado Pago 🔥
     const iniciarPagoPremium = async () => {
-        const email = localStorage.getItem("email");
-        const tokenGuardado = localStorage.getItem("token"); 
+        const email = localStorage.getItem("email")
+        const tokenGuardado = localStorage.getItem("token")
         
         if (!email || !tokenGuardado) {
-            alert("Debes iniciar sesión para suscribirte.");
-            return;
+            alert("Debes iniciar sesión para suscribirte.")
+            return
         }
 
         try {
-            setCargandoPago(true);
-            
-            // Le pasamos email Y token al servicio
-            const respuesta = await crearSuscripcion(email, tokenGuardado);
-            
-            // Si recibimos una URL, redirigimos al usuario
+            setCargandoPago(true)
+            const respuesta = await crearSuscripcion(email, tokenGuardado)
             if (respuesta && respuesta.url) {
-                window.location.href = respuesta.url; 
+                window.location.href = respuesta.url
             } else {
-                alert("No se pudo obtener el enlace de pago. Intenta de nuevo.");
+                alert("No se pudo obtener el enlace de pago. Intenta de nuevo.")
             }
         } catch (error) {
-            console.error("Error al iniciar suscripción:", error);
-            alert("Error al conectar con Mercado Pago. Revisa la consola.");
+            console.error("Error al iniciar suscripción:", error)
+            alert("Error al conectar con Mercado Pago.")
         } finally {
-            setCargandoPago(false);
+            setCargandoPago(false)
         }
-    };
+    }
 
-    // Canjear el mes gratuito directamente en el Backend
     const canjearMesGratis = async () => {
         try {
             setCargandoPrueba(true)
-            const res = await axios.post("https://api.vix-flow.com/api/usuarios/canjear-prueba", {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-
-            alert(res.data || "¡Mes premium activado con éxito!");
-            
-            // Actualizamos los accesos de inmediato en el navegador
+            const res = await axios.post(
+                "https://api.vix-flow.com/api/usuarios/canjear-prueba",
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            alert(res.data || "¡Mes premium activado con éxito!")
             localStorage.setItem("suscripcion", "ACTIVO")
             localStorage.setItem("pruebaConsumida", "true")
             setPruebaConsumida(true)
-            
-            // Redirigimos al espacio de trabajo renovado
             navigate("/calendario")
         } catch (error) {
-            console.error("Error al canjear el mes gratis:", error)
-            alert(error.response?.data || "No se pudo procesar la solicitud del mes gratuito.")
+            alert(error.response?.data || "No se pudo procesar la solicitud.")
         } finally {
             setCargandoPrueba(false)
+        }
+    }
+
+    const handleCancelarSuscripcion = async () => {
+        if (!window.confirm(
+            "¿Estás seguro de cancelar tu suscripción Premium? Perderás acceso a las funciones Premium."
+        )) return
+
+        try {
+            setCargandoCancelar(true)
+            const res = await axios.post(
+                "https://api.vix-flow.com/api/pagos/cancelar-suscripcion",
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            alert(res.data)
+            localStorage.setItem("suscripcion", "INACTIVO")
+            navigate("/calendario")
+        } catch (error) {
+            alert(error.response?.data || "Error al cancelar la suscripción")
+        } finally {
+            setCargandoCancelar(false)
         }
     }
 
@@ -119,7 +131,7 @@ function Plan() {
                         transition={{ delay: 0.2 }}
                         className={`mt-4 text-lg font-medium max-w-xl mx-auto ${darkMode ? "text-gray-400" : "text-gray-500"}`}
                     >
-                        Trabaja en equipo de forma gratuita o desbloquea el control absoluto de tu rendimiento con herramientas premium.
+                        Trabaja en equipo de forma gratuita o desbloquea el control absoluto de tu rendimiento.
                     </motion.p>
                 </div>
 
@@ -230,13 +242,34 @@ function Plan() {
 
                         <div className="mt-8 space-y-3">
                             {suscripcionActual === "ACTIVO" ? (
-                                <motion.button 
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => navigate("/calendario")}
-                                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-purple-500/20 transition-all"
-                                >
-                                    ¡Disfrutar de mi cuenta Premium!
-                                </motion.button>
+                                <>
+                                    <motion.button 
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => navigate("/calendario")}
+                                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-purple-500/20 transition-all"
+                                    >
+                                        ¡Disfrutar de mi cuenta Premium!
+                                    </motion.button>
+
+                                    {/* BOTÓN CANCELAR */}
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={handleCancelarSuscripcion}
+                                        disabled={cargandoCancelar}
+                                        className={`w-full font-bold py-3 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 disabled:opacity-50 ${
+                                            darkMode
+                                                ? "bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white"
+                                                : "bg-red-50 border-red-200 text-red-600 hover:bg-red-500 hover:text-white"
+                                        }`}
+                                    >
+                                        {cargandoCancelar ? (
+                                            <span className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin"></span>
+                                        ) : (
+                                            "Cancelar suscripción Premium"
+                                        )}
+                                    </motion.button>
+                                </>
                             ) : (
                                 <>
                                     <motion.button 
@@ -256,7 +289,6 @@ function Plan() {
                                         )}
                                     </motion.button>
 
-                                    {/* BOTÓN DINÁMICO DE UN MES GRATIS */}
                                     {!pruebaConsumida && (
                                         <motion.button
                                             whileHover={{ scale: 1.02 }}
@@ -283,13 +315,11 @@ function Plan() {
                             )}
                         </div>
                     </motion.div>
-
                 </div>
 
                 <p className={`text-center text-xs mt-12 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                    Pagos procesados de forma segura mediante Mercado Pago. Puedes cancelar tu renovación mensual en cualquier momento desde tu perfil.
+                    Pagos procesados de forma segura mediante Mercado Pago. Puedes cancelar tu renovación mensual en cualquier momento.
                 </p>
-
             </div>
         </div>
     )

@@ -44,6 +44,27 @@ function Perfil() {
         const queryParams = new URLSearchParams(window.location.search);
         if (queryParams.get("pago") === "exitoso") {
             setMensaje({ tipo: "exito", texto: "¡Pago completado! Estamos validando tu suscripción Premium 💎" });
+            
+            // <-- CORRECCIÓN: Polling para sincronizar el estado desde Mercado Pago
+            let intentos = 0;
+            const intervalo = setInterval(async () => {
+                intentos++;
+                try {
+                    const res = await axios.get("https://api.vix-flow.com/api/usuarios/perfil", {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.data.estadoSuscripcion === "ACTIVO") {
+                        localStorage.setItem("suscripcion", "ACTIVO");
+                        clearInterval(intervalo);
+                        // Limpiamos la URL para evitar recargas raras
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        window.location.reload(); 
+                    }
+                } catch (error) {
+                    console.error("Error sincronizando", error);
+                }
+                if (intentos > 5) clearInterval(intervalo); // Cortar después de 15 seg
+            }, 3000);
         }
         cargarMetricas()
     }, [])
@@ -115,6 +136,25 @@ function Perfil() {
             setMensaje({ tipo: "error", texto: error.response?.data?.mensaje || "No se pudo eliminar la cuenta." })
             setModalConfirmacion(false)
             setCargando(false)
+        }
+    }
+
+    const handleCancelarSuscripcion = async () => {
+        if (!window.confirm(
+            "¿Estás seguro de cancelar tu suscripción Premium? Perderás acceso a las funciones Premium."
+        )) return
+
+        try {
+            const res = await axios.post(
+                "https://api.vix-flow.com/api/pagos/cancelar-suscripcion",
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            alert(res.data)
+            localStorage.setItem("suscripcion", "INACTIVO")
+            navigate("/plan")
+        } catch (error) {
+            alert(error.response?.data || "Error al cancelar la suscripción")
         }
     }
 
@@ -209,14 +249,53 @@ function Perfil() {
                         </motion.div>
 
                         {/* Banner Premium */}
-                        {suscripcion !== "ACTIVO" && (
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`p-6 rounded-2xl border bg-gradient-to-br from-purple-500/10 to-cyan-500/10 ${darkMode ? "border-purple-500/30" : "border-purple-200"}`}>
+                        {suscripcion === "ACTIVO" ? (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                transition={{ delay: 0.1 }} 
+                                className={`p-6 rounded-2xl border bg-gradient-to-br from-purple-500/10 to-cyan-500/10 ${darkMode ? "border-purple-500/30" : "border-purple-200"}`}
+                            >
                                 <div className="flex items-center gap-3 mb-2">
                                     <span className="text-3xl">💎</span>
-                                    <h3 className="text-xl font-bold bg-gradient-to-r from-purple-500 to-cyan-500 bg-clip-text text-transparent">Mejora tu Cuenta</h3>
+                                    <h3 className="text-xl font-bold bg-gradient-to-r from-purple-500 to-cyan-500 bg-clip-text text-transparent">
+                                        Plan Premium Activo
+                                    </h3>
                                 </div>
-                                <p className={`text-sm mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Descubre todas las características Premium avanzadas y los planes diseñados para ti.</p>
-                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => navigate("/plan")} className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-400 hover:to-cyan-400 text-white font-bold py-3 rounded-xl shadow-lg shadow-purple-500/30 transition-all flex items-center justify-center gap-2">
+                                <p className={`text-sm mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                    Estás disfrutando de todas las funciones Premium. Tu suscripción se renueva automáticamente cada mes.
+                                </p>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handleCancelarSuscripcion}
+                                    className="w-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold py-3 rounded-xl border border-red-500/20 transition-all text-sm"
+                                >
+                                    Cancelar suscripción Premium
+                                </motion.button>
+                            </motion.div>
+                        ) : (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                transition={{ delay: 0.1 }} 
+                                className={`p-6 rounded-2xl border bg-gradient-to-br from-purple-500/10 to-cyan-500/10 ${darkMode ? "border-purple-500/30" : "border-purple-200"}`}
+                            >
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-3xl">💎</span>
+                                    <h3 className="text-xl font-bold bg-gradient-to-r from-purple-500 to-cyan-500 bg-clip-text text-transparent">
+                                        Mejora tu Cuenta
+                                    </h3>
+                                </div>
+                                <p className={`text-sm mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                    Descubre todas las características Premium avanzadas y los planes diseñados para ti.
+                                </p>
+                                <motion.button 
+                                    whileHover={{ scale: 1.02 }} 
+                                    whileTap={{ scale: 0.98 }} 
+                                    onClick={() => navigate("/plan")} 
+                                    className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-400 hover:to-cyan-400 text-white font-bold py-3 rounded-xl shadow-lg shadow-purple-500/30 transition-all flex items-center justify-center gap-2"
+                                >
                                     <span>💳 Ver Planes y Beneficios</span>
                                 </motion.button>
                             </motion.div>
@@ -330,7 +409,7 @@ function Perfil() {
                                 <button onClick={() => setModalConfirmacion(false)} disabled={cargando} className={`w-1/2 py-3 rounded-xl font-medium transition-colors ${darkMode ? "bg-gray-800 hover:bg-gray-700 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-800"}`}>
                                     Cancelar
                                 </button>
-                                <button onClick={confirmarEliminacionCuenta} disabled={cargando} className="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/20 transition-all flex justify-center items-center">
+                                <button onClick={confirmarEliminacionCuenta} disabled={cargando} className="w-1/2 bg-red-50 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/20 transition-all flex justify-center items-center">
                                     {cargando ? "Eliminando..." : "Sí, eliminar"}
                                 </button>
                             </div>

@@ -56,6 +56,7 @@ public class PagoController {
                     .reason("Suscripción Premium Vix-Flow")
                     .autoRecurring(autoRecurring)
                     .status("pending")
+                    .externalReference(email) // <-- CORRECCIÓN AÑADIDA
                     .build();
 
             Preapproval preapproval = client.create(request);

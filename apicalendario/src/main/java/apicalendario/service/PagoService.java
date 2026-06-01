@@ -19,7 +19,8 @@ public class PagoService {
             Preapproval preapproval = client.get(suscripcionId);
 
             String estado = preapproval.getStatus();
-            String emailPagador = preapproval.getPayerEmail();
+            // <-- CORRECCIÓN: Usar getExternalReference en vez de getPayerEmail
+            String emailPagador = preapproval.getExternalReference();
 
             System.out.println("🔔 Webhook - Estado: " + estado + " Email: " + emailPagador);
 
