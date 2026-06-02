@@ -240,9 +240,9 @@ function Metricas() {
     const porcentajeRacha = proximoObjetivo > 0 ? Math.min(Math.round((rachaActual / proximoObjetivo) * 100), 100) : 0
 
     // ── Lógica para el Panel de Resumen de Hoy ──
-    const hoyPorHacer = metricasPersonales?.hoyPorHacer || 0
-    const hoyEnProceso = metricasPersonales?.hoyEnProceso || 0
-    const hoyCompletadas = metricasPersonales?.hoyCompletadas || 0
+    const hoyPorHacer = Number(metricasPersonales?.hoyPorHacer) || 0
+    const hoyEnProceso = Number(metricasPersonales?.hoyEnProceso) || 0
+    const hoyCompletadas = Number(metricasPersonales?.hoyCompletadas) || 0
     const totalHoy = hoyPorHacer + hoyEnProceso + hoyCompletadas
     const progresoHoy = totalHoy > 0 ? Math.round((hoyCompletadas / totalHoy) * 100) : 0
 
