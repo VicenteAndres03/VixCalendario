@@ -1,5 +1,6 @@
 package apicalendario.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ public class Cuaderno {
 
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
+    @JsonIgnoreProperties({ "password", "cuadernos", "tareas", "habitos", "rol" }) // 👈 evita exponer datos sensibles
     private User usuario;
 
     @Builder.Default

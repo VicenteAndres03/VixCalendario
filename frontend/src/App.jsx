@@ -14,7 +14,8 @@ import DashboardAdmin from "./pages/DashboardAdmin"
 import Plan from "./pages/Plan" 
 import Habitos from "./pages/Habitos" 
 import TableroPublico from "./pages/TableroPublico"
-import Soporte from "./pages/Soporte" // 🔥 NUEVA PÁGINA IMPORTADA 🔥
+import Soporte from "./pages/Soporte" 
+import Cuadernos from "./pages/Cuadernos" // ✨ NUEVA PÁGINA DE CUADERNOS ✨
 
 import Terminos from "./pages/Terminos"
 import Privacidad from "./pages/Privacidad"
@@ -22,7 +23,7 @@ import Cookies from "./pages/Cookies"
 import Nosotros from "./pages/Nosotros"
 
 import RutaProtegida from "./components/RutaProtegida"
-import RutaPremium from "./components/RutaPremium" // Guardian para funciones de pago
+import RutaPremium from "./components/RutaPremium" 
 import Footer from "./components/Footer"
 import AvisoLegal from "./components/AvisoLegal"
 
@@ -44,7 +45,7 @@ function App() {
             <Route path="/registro" element={<Registro />} />
             <Route path="/aceptar-invitacion/:token" element={<AceptarInvitacion />} />
             <Route path="/shared/proyecto/:tokenPublico" element={<TableroPublico />} />
-            <Route path="/soporte" element={<Soporte />} /> {/* 🔥 NUEVA RUTA DE SOPORTE 🔥 */}
+            <Route path="/soporte" element={<Soporte />} /> 
 
             {/* Rutas Legales e Informativas */}
             <Route path="/terminos" element={<Terminos />} />
@@ -61,6 +62,7 @@ function App() {
             <Route path="/proyecto/:id/tablero" element={<RutaProtegida><TableroProyecto /></RutaProtegida>} />
             <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
             <Route path="/plan" element={<RutaProtegida><Plan /></RutaProtegida>} /> 
+            <Route path="/cuadernos" element={<RutaProtegida><Cuadernos /></RutaProtegida>} /> {/* ✨ NUEVA RUTA DE CUADERNOS ✨ */}
             
             {/* 💎 RUTAS EXCLUSIVAS PREMIUM (Bloqueadas si suscripcion !== "ACTIVO") 💎 */}
             <Route path="/habitos" element={

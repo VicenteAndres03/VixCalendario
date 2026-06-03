@@ -30,7 +30,10 @@ public class SecurityConfig {
                                                         "http://localhost:5173",
                                                         "https://vix-flow.com",
                                                         "https://www.vix-flow.com"));
-                                        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
+                                        config.setAllowedMethods(
+                                                        List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")); // 👈
+                                                                                                                      // agrega
+                                                                                                                      // OPTIONS
                                         config.setAllowedHeaders(List.of("*"));
                                         config.setAllowCredentials(true);
                                         return config;

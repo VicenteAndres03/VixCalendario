@@ -1,5 +1,6 @@
 package apicalendario.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -19,13 +20,12 @@ public class Hoja {
     @Column(nullable = false)
     private String titulo;
 
-    // Utilizamos TEXT para poder almacenar notas largas o HTML si usas un editor de
-    // texto enriquecido en el frontend
     @Column(columnDefinition = "TEXT", nullable = true)
     private String contenido;
 
     @ManyToOne
     @JoinColumn(name = "cuaderno_id", nullable = false)
+    @JsonIgnoreProperties({ "usuario", "hojas" }) // 👈 corta la cadena de referencias
     private Cuaderno cuaderno;
 
     @Builder.Default

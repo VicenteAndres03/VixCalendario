@@ -34,6 +34,7 @@ function Navbar() {
         { nombre: "Calendario", ruta: "/calendario", emoji: "📅" },
         { nombre: "Tablero", ruta: "/tablero", emoji: "🗂️" },
         { nombre: "Proyectos", ruta: "/proyectos", emoji: "🚀" },
+        { nombre: "Cuadernos", ruta: "/cuadernos", emoji: "📓" }, // ✨ NUEVA RUTA AGREGADA ✨
         { nombre: "Amigos", ruta: "/amigos", emoji: "👥" },
         { nombre: "Soporte", ruta: "/soporte", emoji: "🎧" }
     ]
