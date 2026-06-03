@@ -31,14 +31,33 @@ function Calendario(){
 
     const handleFondoChange = (e) => {
         const file = e.target.files[0]
-        if (file) {
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setFondoImagen(reader.result)
-                localStorage.setItem(keyFondo, reader.result)
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onloadend = () => {
+            // Comprimir antes de guardar
+            const img = new Image()
+            img.onload = () => {
+                const canvas = document.createElement('canvas')
+                const MAX = 800
+                let w = img.width, h = img.height
+                if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
+                if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
+                canvas.width = w
+                canvas.height = h
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+                const compressed = canvas.toDataURL('image/jpeg', 0.6)
+                setFondoImagen(compressed)
+                try {
+                    localStorage.setItem(keyFondo, compressed)
+                } catch {
+                    // Si aún así no cabe, solo lo guardamos en estado (no persiste)
+                    console.warn('Imagen demasiado grande para localStorage')
+                }
             }
-            reader.readAsDataURL(file)
+            img.src = reader.result
         }
+        reader.readAsDataURL(file)
     }
 
     const quitarFondo = () => {
@@ -165,20 +184,20 @@ function Calendario(){
                     className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transform-gpu will-change-transform" 
                     style={{ backgroundImage: `url(${fondoImagen})` }}
                 >
-                    {/* Capa oscura sutil */}
-                    <div className="absolute inset-0 bg-black/30"></div>
+                    {/* Capa oscura sutil (Reducida a un 10% para que resalte la imagen) */}
+                    <div className="absolute inset-0 bg-black/10"></div>
                 </div>
             )}
 
             <div className="relative z-10">
                 <Navbar />
 
-                {/* ── CONTENEDOR TIPO CRISTAL (Aceleración GPU añadida) ── */}
+                {/* ── CONTENEDOR TIPO CRISTAL (Opacidad optimizada a /40 y desenfoque suavizado) ── */}
                 <div className={`p-6 max-w-7xl mx-auto w-full mt-6 transition-all duration-300 ${
                     fondoImagen 
                         ? (darkMode 
-                            ? 'bg-gray-950/85 backdrop-blur-2xl transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-gray-700/50' 
-                            : 'bg-white/85 backdrop-blur-2xl transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.15)] border border-white/60') 
+                            ? 'bg-gray-950/40 backdrop-blur-md transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-gray-700/50' 
+                            : 'bg-white/40 backdrop-blur-md transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.15)] border border-white/60') 
                         : ''
                 }`}>
                     
@@ -279,10 +298,10 @@ function Calendario(){
                                             className={`min-h-24 p-2 rounded-xl border cursor-pointer transition-all duration-300
                                                 ${dia 
                                                     ? fondoImagen 
-                                                        ? (darkMode ? "border-gray-800/50 hover:border-cyan-500/50 hover:bg-cyan-500/10 bg-gray-900/30" : "border-gray-300/50 hover:border-cyan-500/50 hover:bg-cyan-500/10 bg-white/40")
+                                                        ? (darkMode ? "border-gray-800/30 hover:border-cyan-500/50 hover:bg-cyan-500/20 bg-gray-900/10" : "border-gray-300/30 hover:border-cyan-500/50 hover:bg-cyan-500/20 bg-white/10")
                                                         : (darkMode ? "border-gray-800 hover:border-cyan-500/50 hover:bg-cyan-500/5" : "border-gray-200 hover:border-cyan-500/50 hover:bg-cyan-500/5")
                                                     : "border-transparent cursor-default"}
-                                                ${dia && esHoy(diaObj) ? "border-cyan-500 bg-cyan-500/10" : ""}`}
+                                                ${dia && esHoy(diaObj) ? "border-cyan-500 bg-cyan-500/20" : ""}`}
                                         >
                                             {dia && (
                                                 <div className="flex flex-col h-full w-full relative">

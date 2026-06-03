@@ -126,11 +126,15 @@ public class TareaService {
             // Si no es recurrente, simplemente cambiamos el estado original
             tarea.setEstado(nuevoEstado);
         }
+
+        // 1. PRIMERO guardamos la tarea
+        repositorio.save(tarea);
+
+        // 2. LUEGO actualizamos la racha
         if (fecha != null) {
             metricasService.actualizarRacha(tarea.getUsuario().getEmail(), fecha);
         }
 
-        repositorio.save(tarea);
         return "Estado actualizado correctamente";
     }
 

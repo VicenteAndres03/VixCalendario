@@ -43,8 +43,9 @@ public class MetricasService {
                                 .distinct() // Filtra para que queden solo las diferentes
                                 .count();
 
-                // Validamos que existan al menos 5 tareas distintas en el día
-                if (tareasUnicas < 5) {
+                // Validamos que existan al menos 3 tareas distintas en el día (reducido de 5 a
+                // 3)
+                if (tareasUnicas < 3) {
                         return; // No evalúa la racha si no cumple el mínimo de esfuerzo
                 }
 
