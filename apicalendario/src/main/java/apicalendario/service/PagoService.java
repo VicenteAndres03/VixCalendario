@@ -26,58 +26,52 @@ public class PagoService {
 
     public void procesarEventoSuscripcion(String suscripcionId) {
         try {
-            // ── CORRECCIÓN: Garantizar el token antes de cualquier llamada a la API de MP
-            // ──
             MercadoPagoConfig.setAccessToken(accessToken);
 
             PreapprovalClient client = new PreapprovalClient();
             Preapproval preapproval = client.get(suscripcionId);
 
             String estado = preapproval.getStatus();
-            String emailPagador = preapproval.getExternalReference();
+            // 🔥 CAMBIADO: externalReference ahora es el ID del usuario
+            String usuarioId = preapproval.getExternalReference();
 
-            System.out.println("🔔 Webhook - Estado: " + estado + " | Email: " + emailPagador
+            System.out.println("🔔 Webhook - Estado: " + estado + " | UsuarioId: " + usuarioId
                     + " | SuscripcionId: " + suscripcionId);
 
-            if (emailPagador == null || emailPagador.isBlank()) {
-                System.out.println("⚠️ externalReference vacío para suscripcionId: " + suscripcionId
-                        + ". Verifica que al crear la suscripción se esté enviando .externalReference(email)");
+            if (usuarioId == null || usuarioId.isBlank()) {
+                System.out.println("⚠️ externalReference vacío para suscripcionId: " + suscripcionId);
                 return;
             }
 
-            usuarioRepo.findByEmail(emailPagador).ifPresent(usuario -> {
+            // 🔥 CAMBIADO: Buscamos por ID en vez de email
+            Long id = Long.parseLong(usuarioId);
+            usuarioRepo.findById(id).ifPresent(usuario -> {
 
-                /**
-                 * CORRECCIÓN: MercadoPago puede enviar el estado como "authorized" O "active"
-                 * dependiendo de la versión de su API y del tipo de evento.
-                 * Antes solo se comparaba contra "authorized" y se perdían los eventos
-                 * "active".
-                 */
                 if ("authorized".equals(estado) || "active".equals(estado)) {
                     usuario.setEstadoSuscripcion(EstadoSuscripcion.ACTIVO);
                     usuario.setMercadoPagoSuscripcionId(suscripcionId);
                     usuario.setFechaFinPremium(java.time.LocalDate.now().plusMonths(1));
                     usuarioRepo.save(usuario);
-                    System.out.println("✅ Usuario activado: " + emailPagador);
+                    System.out.println("✅ Usuario activado ID: " + usuarioId);
 
                 } else if ("cancelled".equals(estado) || "paused".equals(estado)) {
                     usuario.setEstadoSuscripcion(EstadoSuscripcion.INACTIVO);
                     usuario.setFechaFinPremium(null);
                     usuario.setMercadoPagoSuscripcionId(null);
                     usuarioRepo.save(usuario);
-                    System.out.println("❌ Usuario desactivado: " + emailPagador);
+                    System.out.println("❌ Usuario desactivado ID: " + usuarioId);
 
                 } else {
-                    // Loguear estados no manejados para detectar futuros problemas
-                    System.out.println("ℹ️ Estado de suscripción no manejado: '" + estado
-                            + "' para " + emailPagador + ". No se realizó ningún cambio.");
+                    System.out.println("ℹ️ Estado no manejado: '" + estado + "' para usuario ID: " + usuarioId);
                 }
             });
 
-            if (usuarioRepo.findByEmail(emailPagador).isEmpty()) {
-                System.out.println("⚠️ No se encontró usuario con email: " + emailPagador);
+            if (usuarioRepo.findById(id).isEmpty()) {
+                System.out.println("⚠️ No se encontró usuario con ID: " + usuarioId);
             }
 
+        } catch (NumberFormatException e) {
+            System.out.println("❌ externalReference no es un ID válido: " + e.getMessage());
         } catch (Exception e) {
             System.out.println("❌ Error procesando webhook para suscripcionId " + suscripcionId
                     + ": " + e.getMessage());

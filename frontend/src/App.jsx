@@ -15,7 +15,8 @@ import Plan from "./pages/Plan"
 import Habitos from "./pages/Habitos" 
 import TableroPublico from "./pages/TableroPublico"
 import Soporte from "./pages/Soporte"
-import Cuadernos from "./pages/Cuadernos" // ✨ AGREGADO ✨
+import Cuadernos from "./pages/Cuadernos"
+import CuadernoDetalle from "./pages/CuadernoDetalle"
 
 import Terminos from "./pages/Terminos"
 import Privacidad from "./pages/Privacidad"
@@ -62,7 +63,8 @@ function App() {
             <Route path="/proyecto/:id/tablero" element={<RutaProtegida><TableroProyecto /></RutaProtegida>} />
             <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
             <Route path="/plan" element={<RutaProtegida><Plan /></RutaProtegida>} />
-            <Route path="/cuadernos" element={<RutaProtegida><Cuadernos /></RutaProtegida>} /> {/* ✨ AGREGADO ✨ */}
+            <Route path="/cuadernos" element={<RutaProtegida><Cuadernos /></RutaProtegida>} />
+            <Route path="/cuadernos/:id" element={<RutaProtegida><CuadernoDetalle /></RutaProtegida>} />
 
             {/* 💎 RUTAS EXCLUSIVAS PREMIUM 💎 */}
             <Route path="/habitos" element={

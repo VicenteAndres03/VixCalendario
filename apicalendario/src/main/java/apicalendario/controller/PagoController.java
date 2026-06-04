@@ -41,6 +41,10 @@ public class PagoController {
     @PostMapping("/crear-suscripcion")
     public ResponseEntity<Map<String, String>> crearSuscripcion(@RequestParam String email) {
         try {
+            // 🔥 NUEVO: Buscamos al usuario para obtener su ID
+            User usuario = usuarioRepo.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
             PreapprovalClient client = new PreapprovalClient();
 
             PreApprovalAutoRecurringCreateRequest autoRecurring = PreApprovalAutoRecurringCreateRequest.builder()
@@ -56,7 +60,8 @@ public class PagoController {
                     .reason("Suscripción Premium Vix-Flow")
                     .autoRecurring(autoRecurring)
                     .status("pending")
-                    .externalReference(email)
+                    // 🔥 CAMBIADO: Usamos el ID del usuario en vez del email
+                    .externalReference(String.valueOf(usuario.getId()))
                     .build();
 
             Preapproval preapproval = client.create(request);
