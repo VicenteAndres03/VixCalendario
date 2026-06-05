@@ -25,6 +25,11 @@ function Tablero(){
     const tituloFecha = `${diasSemana[fechaTablero.getDay()]}, ${fechaTablero.getDate()} de ${meses[fechaTablero.getMonth()]} ${fechaTablero.getFullYear()}`
     const fechaFormateada = `${fechaTablero.getFullYear()}-${String(fechaTablero.getMonth()+1).padStart(2,"0")}-${String(fechaTablero.getDate()).padStart(2,"0")}`
 
+    const hoy = new Date()
+    const hoyLimpio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    const fechaLimpia = new Date(fechaTablero.getFullYear(), fechaTablero.getMonth(), fechaTablero.getDate())
+    const esDiaPasado = fechaLimpia < hoyLimpio
+
     const [tareas, setTareas] = useState({ POR_HACER: [], EN_PROCESO: [], TERMINADO: [] })
     
     // Controles de Gamificación y Focus
@@ -166,18 +171,34 @@ function Tablero(){
 
         const origen = [...tareas[source.droppableId]]
         const destino = [...tareas[destination.droppableId]]
+        
+        // Extraemos la tarea que se está moviendo
         const [tarea] = origen.splice(source.index, 1)
 
+        // 🔥 ACTUALIZACIÓN: Creamos una copia de la tarea con el nuevo estado
+        // Esto asegura que al abrir los detalles, el estado ('POR_HACER', 'EN_PROCESO', etc.) sea el correcto.
+        const tareaActualizada = { ...tarea, estado: destination.droppableId }
+
         if (source.droppableId === destination.droppableId) {
+            // Si se mueve dentro de la misma columna, no cambiamos su estado
             origen.splice(destination.index, 0, tarea)
             setTareas(prev => ({ ...prev, [source.droppableId]: origen }))
         } else {
-            destino.splice(destination.index, 0, tarea)
+            // Si cambia de columna, guardamos la tarea con el estado ya actualizado
+            destino.splice(destination.index, 0, tareaActualizada)
             setTareas(prev => ({ ...prev, [source.droppableId]: origen, [destination.droppableId]: destino }))
+            
+            // Si por alguna razón la tarea estuviera abierta en el modal de detalles, también la actualizamos allí
+            if (tareaDetalle && tareaDetalle.id === tareaActualizada.id) {
+                setTareaDetalle(tareaActualizada)
+            }
+
             try {
-                await axios.patch(`https://api.vix-flow.com/api/tarea/${tarea.id}/estado?nuevoEstado=${destination.droppableId}&fecha=${fechaFormateada}`, {}, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.patch(`https://api.vix-flow.com/api/tarea/${tareaActualizada.id}/estado?nuevoEstado=${destination.droppableId}&fecha=${fechaFormateada}`, {}, { headers: { Authorization: `Bearer ${token}` } })
                 if (destination.droppableId === "TERMINADO") cargarMetricas()
-            } catch (err) { cargarTareas() }
+            } catch (err) { 
+                cargarTareas() 
+            }
         }
     }
 
@@ -283,6 +304,15 @@ function Tablero(){
                     </div>
                 </div>
 
+                {esDiaPasado ? (
+                    <div className={`w-full mb-10 p-5 rounded-3xl border flex items-center gap-4 ${darkMode ? "bg-gray-900/40 border-white/10" : "bg-gray-50 border-gray-200"}`}>
+                        <span className="text-3xl">🔒</span>
+                        <div>
+                            <p className={`font-bold text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Día pasado — solo lectura</p>
+                            <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>No puedes agregar ni modificar tareas en días anteriores.</p>
+                        </div>
+                    </div>
+                ) : (
                 <motion.form onSubmit={handleCrearTarea} className={`w-full mb-10 p-6 rounded-3xl border backdrop-blur-xl shadow-lg transition-all ${darkMode ? "bg-gray-900/40 border-white/10" : "bg-white border-gray-200"}`}>
                     <div className="flex flex-col gap-5">
                         <div className="flex flex-col md:flex-row gap-4">
@@ -313,6 +343,7 @@ function Tablero(){
                         </AnimatePresence>
                     </div>
                 </motion.form>
+                )}{/* fin ternario esDiaPasado */}
 
                 <DragDropContext onDragEnd={onDragEnd}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -330,7 +361,7 @@ function Tablero(){
                                                 {tareas[columna.id].map((tarea, index) => (
                                                     <Draggable key={tarea.id} draggableId={tarea.id} index={index}>
                                                         {(provided, snapshot) => (
-                                                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                            <div ref={provided.innerRef} {...provided.draggableProps} {...(esDiaPasado ? {} : provided.dragHandleProps)}>
                                                                 <motion.div 
                                                                     initial={{ opacity: 0, y: 20 }} 
                                                                     animate={{ opacity: 1, y: 0 }} 
@@ -343,11 +374,12 @@ function Tablero(){
                                                                     className={`border rounded-xl p-4 cursor-grab active:cursor-grabbing transition-all duration-300 ${snapshot.isDragging ? "border-cyan-500 shadow-lg shadow-cyan-500/20 rotate-2 scale-105" : darkMode ? "bg-gray-900 border-gray-700 hover:border-cyan-500/50" : "bg-white border-gray-200 shadow-sm hover:border-cyan-500/30"}`}>
                                                                     <div className="flex items-start justify-between mb-1">
                                                                         <h3 className={`font-medium flex items-center ${darkMode ? "text-white" : "text-gray-800"} ${columna.id === "TERMINADO" ? "line-through opacity-50" : ""}`}>{tarea.nombre}</h3>
+                                                                        {!esDiaPasado && (
                                                                         <div className="flex gap-3 items-center">
                                                                             <button onClick={(e) => { e.stopPropagation(); abrirModalEditar(tarea) }} className="text-gray-400 hover:text-cyan-500 transition-colors">✏️</button>
-                                                                            {/* 🔥 CAMBIADO: AHORA LLAMA A INTENTAR ELIMINAR 🔥 */}
                                                                             <button onClick={(e) => { e.stopPropagation(); intentarEliminar(tarea.id) }} className="text-gray-400 hover:text-red-400 transition-colors">🗑️</button>
                                                                         </div>
+                                                                        )}
                                                                     </div>
                                                                     {tarea.descripcion && tarea.descripcion !== "Sin descripción" && <p className={`text-sm mt-1 mb-2 line-clamp-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{tarea.descripcion}</p>}
                                                                     {tarea.esRecurrente && (
@@ -522,6 +554,8 @@ function Tablero(){
 
                             {/* Botones */}
                             <div className="flex gap-3 mt-6">
+                                {!esDiaPasado && (
+                                <>
                                 <button
                                     onClick={() => {
                                         setModalDetalle(false)
@@ -544,6 +578,13 @@ function Tablero(){
                                 >
                                     🗑️ Eliminar
                                 </button>
+                                </>
+                                )}
+                                {esDiaPasado && (
+                                    <p className={`w-full text-center text-sm py-3 rounded-xl ${darkMode ? "bg-gray-800 text-gray-500" : "bg-gray-100 text-gray-400"}`}>
+                                        🔒 Día pasado — solo lectura
+                                    </p>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>

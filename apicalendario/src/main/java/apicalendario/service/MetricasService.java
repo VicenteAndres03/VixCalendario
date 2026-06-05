@@ -173,6 +173,29 @@ public class MetricasService {
                 double promedioDiario = diasConTareas == 0 ? 0
                                 : Math.round((totalCompletadas * 10.0) / diasConTareas) / 10.0;
 
+                // ── Tareas de HOY por estado ──
+                int dayOfWeekNum = hoy.getDayOfWeek().getValue();
+                String[] mapaDias = { "", "L", "M", "X", "J", "V", "S", "D" };
+                String letraHoy = mapaDias[dayOfWeekNum];
+
+                List<Tarea> tareasDeHoy = todasLasTareas.stream().filter(t -> {
+                        if (t.getFechaInicio() == null)
+                                return false;
+                        LocalDate fechaTarea = t.getFechaInicio().toLocalDate();
+                        if (t.isEsRecurrente() && t.getDiasRecurrencia() != null) {
+                                return !fechaTarea.isAfter(hoy) && t.getDiasRecurrencia().contains(letraHoy);
+                        } else {
+                                return fechaTarea.equals(hoy);
+                        }
+                }).collect(Collectors.toList());
+
+                long hoyPorHacer = tareasDeHoy.stream()
+                                .filter(t -> t.getEstado() == Estado.POR_HACER).count();
+                long hoyEnProceso = tareasDeHoy.stream()
+                                .filter(t -> t.getEstado() == Estado.EN_PROCESO).count();
+                long hoyCompletadas = tareasDeHoy.stream()
+                                .filter(t -> t.getEstado() == Estado.TERMINADO).count();
+
                 // Armamos la respuesta
                 Map<String, Object> metricas = new LinkedHashMap<>();
                 metricas.put("totalCreadas", totalCreadas);
@@ -186,6 +209,9 @@ public class MetricasService {
                 metricas.put("rachaActual", usuario.getRachaActual());
                 metricas.put("mejorRacha", usuario.getMejorRacha());
                 metricas.put("diasGratuitos", usuario.getDiasGratuitos());
+                metricas.put("hoyPorHacer", hoyPorHacer);
+                metricas.put("hoyEnProceso", hoyEnProceso);
+                metricas.put("hoyCompletadas", hoyCompletadas);
 
                 return metricas;
         }

@@ -35,7 +35,6 @@ function Calendario(){
 
         const reader = new FileReader()
         reader.onloadend = () => {
-            // Comprimir antes de guardar
             const img = new Image()
             img.onload = () => {
                 const canvas = document.createElement('canvas')
@@ -51,7 +50,6 @@ function Calendario(){
                 try {
                     localStorage.setItem(keyFondo, compressed)
                 } catch {
-                    // Si aún así no cabe, solo lo guardamos en estado (no persiste)
                     console.warn('Imagen demasiado grande para localStorage')
                 }
             }
@@ -160,6 +158,12 @@ function Calendario(){
                fecha.getFullYear() === hoy.getFullYear()
     }
 
+    const esPasado = (fecha) => {
+        const hoyLimpio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+        const fechaLimpia = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
+        return fechaLimpia < hoyLimpio
+    }
+
     const navegarAnterior = () => {
         if (vista === "mes") setFechaActual(new Date(fechaActual.getFullYear(), fechaActual.getMonth() - 1))
         else if (vista === "semana") { const nueva = new Date(fechaActual); nueva.setDate(nueva.getDate() - 7); setFechaActual(nueva) }
@@ -179,28 +183,35 @@ function Calendario(){
         navigate("/plan")
     }
 
+    // ── Clases dinámicas para el div raíz ──
+    // FIX: se agrega min-h-screen para que el fondo siempre cubra toda la pantalla
+    // y se unifica la lógica de clases para evitar que quede transparente/blanco
+    const clasesRaiz = fondoImagen
+        ? `relative min-h-screen pb-10 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-gray-900'}`
+        : `relative min-h-screen pb-10 transition-colors duration-300 ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`
+
     return (
-        <div className={`${darkMode && !fondoImagen ? 'bg-gray-950 text-white' : !darkMode && !fondoImagen ? 'bg-gray-50 text-gray-900' : darkMode ? 'text-white' : 'text-gray-900'} min-h-screen transition-colors duration-300 overflow-y-scroll relative pb-10`}>
+        <div className={clasesRaiz}>
             
-            {/* ── IMAGEN DE FONDO GLOBAL (Optimizado) ── */}
+            {/* ── IMAGEN DE FONDO ── */}
             {esPremium && fondoImagen && (
                 <div 
-                    className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transform-gpu will-change-transform" 
+                    className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
                     style={{ backgroundImage: `url(${fondoImagen})` }}
                 >
-                    {/* Capa oscura sutil (Reducida a un 10% para que resalte la imagen) */}
-                    <div className="absolute inset-0 bg-black/10"></div>
+                    {/* Overlay base para que el texto siempre sea legible */}
+                    <div className={`absolute inset-0 ${darkMode ? 'bg-gray-950/40' : 'bg-white/20'}`}></div>
                 </div>
             )}
 
             <div className="relative z-10">
                 <Navbar />
 
-                {/* ── CONTENEDOR TIPO CRISTAL (Opacidad optimizada y fondo dinámico) ── */}
+                {/* ── CONTENEDOR CON EFECTO CRISTAL (solo cuando hay fondo) ── */}
                 <div
                     className={`p-6 max-w-7xl mx-auto w-full mt-6 transition-all duration-300 ${
                         fondoImagen
-                            ? 'backdrop-blur-md transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.15)] border border-gray-700/50'
+                            ? 'backdrop-blur-md rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.15)] border border-gray-700/50'
                             : ''
                     }`}
                     style={
@@ -214,7 +225,6 @@ function Calendario(){
                     }
                 >
                     
-                    
                     {/* Header Superior Fijo */}
                     <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6 min-h-[60px]">
                         
@@ -225,7 +235,7 @@ function Calendario(){
                                 <span className="font-bold text-sm">{rachaActual} días</span>
                             </div>
 
-                            {/* BOTÓN SUBIR FONDO (Con validación Premium) */}
+                            {/* BOTÓN SUBIR FONDO */}
                             {esPremium ? (
                                 <div className="relative group">
                                     <label className={`cursor-pointer px-3 py-2 rounded-xl text-sm font-bold border transition-all flex items-center gap-2 ${darkMode ? "bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500 hover:text-white" : "bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100"}`} title="Subir fondo de pantalla">
@@ -240,8 +250,6 @@ function Calendario(){
                                         >
                                             ✕
                                         </button>
-
-                                        
                                     )}
                                 </div>
                             ) : (
@@ -249,7 +257,7 @@ function Calendario(){
                                     <button 
                                         onClick={handleClickFondoBloqueado}
                                         className={`px-3 py-2 rounded-xl text-sm font-bold border border-dashed transition-all flex items-center gap-2 ${darkMode ? "border-gray-700 bg-gray-900/50 text-gray-500 hover:border-gray-500 hover:text-gray-400" : "border-gray-300 bg-gray-50 text-gray-400 hover:border-gray-400"}`} 
-                                        title="Función exclusiva Premium - Haz clic para ver planes"
+                                        title="Función exclusiva Premium"
                                     >
                                         <span>🔒</span> <span className="hidden sm:inline">Fondo</span>
                                     </button>
@@ -294,7 +302,7 @@ function Calendario(){
                             </div>
                         </div>
 
-                        {/* Botones de Navegación y Mes Dinámico */}
+                        {/* Botones Navegación */}
                         <div className="flex items-center justify-end gap-2">
                             <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={navegarAnterior} className={`px-3 py-2 rounded-xl font-bold ${fondoImagen ? (darkMode ? 'bg-gray-900/60 text-white' : 'bg-white/60 text-gray-800') : (darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800 border border-gray-300')}`}>◀</motion.button>
                             
@@ -324,16 +332,22 @@ function Calendario(){
                                 {getDiasDelMes().map((dia, index) => {
                                     const diaObj = dia ? new Date(fechaActual.getFullYear(), fechaActual.getMonth(), dia) : null
                                     const tareasDelDia = getTareasParaDia(diaObj)
+                                    const esDiaPasado = diaObj && esPasado(diaObj)
                                     return (
                                         <motion.div
                                             key={index}
-                                            whileHover={dia ? { scale: 1.03 } : {}}
-                                            onClick={() => irAlTablero(dia)}
-                                            className={`min-h-24 p-2 rounded-xl border cursor-pointer transition-all duration-300
+                                            whileHover={dia && !esDiaPasado ? { scale: 1.03 } : {}}
+                                            onClick={() => {
+                                                if (!dia) return
+                                                irAlTablero(dia)
+                                            }}
+                                            className={`min-h-24 p-2 rounded-xl border transition-all duration-300
                                                 ${dia 
-                                                    ? fondoImagen 
-                                                        ? (darkMode ? "border-gray-800/30 hover:border-cyan-500/50 hover:bg-cyan-500/20 bg-gray-900/10" : "border-gray-300/30 hover:border-cyan-500/50 hover:bg-cyan-500/20 bg-white/10")
-                                                        : (darkMode ? "border-gray-800 hover:border-cyan-500/50 hover:bg-cyan-500/5" : "border-gray-200 hover:border-cyan-500/50 hover:bg-cyan-500/5")
+                                                    ? esDiaPasado
+                                                        ? (darkMode ? "border-gray-800/50 bg-gray-900/30 cursor-default opacity-50" : "border-gray-200/50 bg-gray-100/50 cursor-default opacity-50")
+                                                        : fondoImagen 
+                                                            ? (darkMode ? "border-gray-800/30 hover:border-cyan-500/50 hover:bg-cyan-500/20 bg-gray-900/10 cursor-pointer" : "border-gray-300/30 hover:border-cyan-500/50 hover:bg-cyan-500/20 bg-white/10 cursor-pointer")
+                                                            : (darkMode ? "border-gray-800 hover:border-cyan-500/50 hover:bg-cyan-500/5 cursor-pointer" : "border-gray-200 hover:border-cyan-500/50 hover:bg-cyan-500/5 cursor-pointer")
                                                     : "border-transparent cursor-default"}
                                                 ${dia && esHoy(diaObj) ? "border-cyan-500 bg-cyan-500/20" : ""}`}
                                         >
@@ -371,21 +385,25 @@ function Calendario(){
                                     <div className="text-gray-600 text-sm p-2"></div>
                                     {getDiasSemana().map((dia, index) => {
                                         const tareasDelDia = getTareasParaDia(dia)
+                                        const esDiaPasado = esPasado(dia)
                                         return (
                                             <motion.div
                                                 key={index}
-                                                whileHover={{ scale: 1.05 }}
-                                                onClick={() => irAlTablero(dia.getDate())}
-                                                className={`text-center p-2 rounded-xl cursor-pointer transition-all flex flex-col items-center
-                                                    ${esHoy(dia) 
-                                                        ? "bg-cyan-500/20 border border-cyan-500/30" 
-                                                        : fondoImagen 
-                                                            ? (darkMode ? "hover:bg-gray-800/50" : "hover:bg-white/50")
-                                                            : (darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200")}`}
+                                                whileHover={!esDiaPasado ? { scale: 1.05 } : {}}
+                                                onClick={() => !esDiaPasado && irAlTablero(dia.getDate())}
+                                                className={`text-center p-2 rounded-xl transition-all flex flex-col items-center
+                                                    ${esDiaPasado 
+                                                        ? "opacity-40 cursor-default"
+                                                        : "cursor-pointer " + (esHoy(dia) 
+                                                            ? "bg-cyan-500/20 border border-cyan-500/30" 
+                                                            : fondoImagen 
+                                                                ? (darkMode ? "hover:bg-gray-800/50" : "hover:bg-white/50")
+                                                                : (darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"))
+                                                    }
+                                                    ${!esDiaPasado && esHoy(dia) ? "bg-cyan-500/20 border border-cyan-500/30" : ""}`}
                                             >
                                                 <div className="text-gray-400 text-xs">{diasSemana[dia.getDay()]}</div>
                                                 <div className={`text-lg font-bold mt-1 ${esHoy(dia) ? "text-cyan-400" : darkMode ? "text-white" : "text-gray-900"}`}>{dia.getDate()}</div>
-                                                
                                                 <div className="flex gap-1 mt-1 h-2">
                                                     {tareasDelDia.slice(0, 3).map((t, i) => (
                                                         <div key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-400" title={t.nombre}></div>
@@ -401,14 +419,16 @@ function Calendario(){
                                             <div className={`text-xs p-2 border-r flex items-start ${fondoImagen ? (darkMode ? 'border-gray-700/50 text-gray-400' : 'border-gray-300/50 text-gray-500') : (darkMode ? 'border-gray-800/50 text-gray-600' : 'border-gray-200/50 text-gray-400')}`}>{hora}:00</div>
                                             {getDiasSemana().map((dia, index) => {
                                                 const tareasDelDia = getTareasParaDia(dia);
+                                                const esDiaPasado = esPasado(dia)
                                                 return (
                                                     <motion.div
                                                         key={index}
-                                                        whileHover={{ backgroundColor: "rgba(6,182,212,0.1)" }}
-                                                        onClick={() => irAlTablero(dia.getDate())}
-                                                        className={`border-r cursor-pointer transition-all p-1 relative flex flex-col gap-1 
+                                                        whileHover={!esDiaPasado ? { backgroundColor: "rgba(6,182,212,0.1)" } : {}}
+                                                        onClick={() => !esDiaPasado && irAlTablero(dia.getDate())}
+                                                        className={`border-r transition-all p-1 relative flex flex-col gap-1 
                                                             ${fondoImagen ? (darkMode ? 'border-gray-700/50' : 'border-gray-300/50') : (darkMode ? 'border-gray-800/50' : 'border-gray-200/50')} 
-                                                            ${esHoy(dia) ? (darkMode ? "bg-cyan-500/10" : "bg-cyan-500/5") : ""}`}
+                                                            ${esHoy(dia) ? (darkMode ? "bg-cyan-500/10" : "bg-cyan-500/5") : ""}
+                                                            ${esDiaPasado ? "opacity-40 cursor-default" : "cursor-pointer"}`}
                                                     >
                                                         {tareasDelDia.map((tarea, i) => {
                                                             const horaInicio = new Date(tarea.fechaInicio).getHours();

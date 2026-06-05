@@ -10,6 +10,9 @@ function CuadernoDetalle() {
     const navigate = useNavigate()
     const { darkMode } = useContext(ThemeContext)
     const token = localStorage.getItem("token")
+    const suscripcion = localStorage.getItem("suscripcion") || "INACTIVO"
+    const rol = localStorage.getItem("rol") || "USER"
+    const esPremium = suscripcion === "ACTIVO" || rol === "ADMIN"
 
     const [cuaderno, setCuaderno] = useState(null)
     const [hojas, setHojas] = useState([])
@@ -18,6 +21,7 @@ function CuadernoDetalle() {
     const [titulo, setTitulo] = useState("")
     const [guardando, setGuardando] = useState(false)
     const [error, setError] = useState("")
+    const [descargandoPdf, setDescargandoPdf] = useState(false)
 
     useEffect(() => {
         cargarCuaderno()
@@ -130,17 +134,58 @@ function CuadernoDetalle() {
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [hojaActiva, titulo, contenido])
 
+    const descargarPdf = async () => {
+        if (!esPremium) {
+            navigate("/plan")
+            return
+        }
+        setDescargandoPdf(true)
+        try {
+            const res = await axios.get(
+                `https://api.vix-flow.com/api/reportes/cuaderno/${id}`,
+                { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
+            )
+            // Verificar que la respuesta sea realmente un PDF y no un error JSON
+            const contentType = res.headers['content-type'] || ''
+            if (!contentType.includes('application/pdf')) {
+                // Si el server devolvió JSON de error dentro del blob, leerlo
+                const text = await res.data.text()
+                console.error("Respuesta inesperada del servidor:", text)
+                setError("El servidor no pudo generar el PDF. Inténtalo de nuevo.")
+                return
+            }
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+            const link = document.createElement("a")
+            link.href = url
+            link.setAttribute("download", `Cuaderno_${cuaderno?.nombre || id}.pdf`)
+            document.body.appendChild(link)
+            link.click()
+            link.parentNode.removeChild(link)
+            window.URL.revokeObjectURL(url)
+        } catch (error) {
+            console.error("Error al descargar PDF:", error)
+            // Si el error tiene respuesta, puede ser 403 (no premium) o 500
+            if (error.response?.status === 403) {
+                navigate("/plan")
+            } else {
+                setError("Error al generar el PDF. Verifica tu conexión e inténtalo de nuevo.")
+            }
+        } finally {
+            setDescargandoPdf(false)
+        }
+    }
+
     return (
         <div className={`${darkMode ? "bg-gray-950 text-white" : "bg-gray-50 text-gray-900"} min-h-screen transition-colors duration-300`}>
             <Navbar />
 
-            <div className="max-w-7xl mx-auto p-6 flex gap-6" style={{ height: "calc(100vh - 80px)" }}>
+            <div className="max-w-7xl mx-auto p-3 sm:p-6 flex flex-col md:flex-row gap-4 md:gap-6" style={{ height: "calc(100vh - 80px)" }}>
 
                 {/* SIDEBAR */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className={`w-64 shrink-0 rounded-2xl border flex flex-col overflow-hidden ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
+                    className={`w-full md:w-64 h-1/3 md:h-full shrink-0 rounded-2xl border flex flex-col overflow-hidden ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
                 >
                     {/* Header */}
                     <div className={`p-4 border-b ${darkMode ? "border-gray-800" : "border-gray-100"}`}>
@@ -201,7 +246,30 @@ function CuadernoDetalle() {
                     )}
 
                     {/* Botón nueva hoja */}
-                    <div className={`p-3 border-t ${darkMode ? "border-gray-800" : "border-gray-100"}`}>
+                    <div className={`p-3 border-t flex flex-col gap-2 ${darkMode ? "border-gray-800" : "border-gray-100"}`}>
+                        {/* Botón PDF */}
+                        <button
+                            onClick={descargarPdf}
+                            disabled={descargandoPdf}
+                            className={`w-full font-bold py-2 rounded-xl text-sm transition-all flex items-center justify-center gap-2 border
+                                ${esPremium
+                                    ? (darkMode
+                                        ? "border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
+                                        : "border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100")
+                                    : "border-dashed border-gray-600 bg-gray-800/30 text-gray-500 hover:text-gray-400"
+                                } disabled:opacity-50`}
+                            title={esPremium ? "Exportar como PDF" : "Función exclusiva Premium"}
+                        >
+                            {descargandoPdf ? (
+                                <span className="flex items-center gap-2">⏳ Generando...</span>
+                            ) : (
+                                <>
+                                    {esPremium ? "📄" : "🔒"} Exportar PDF
+                                    {!esPremium && <span className="text-xs font-normal">(Premium)</span>}
+                                </>
+                            )}
+                        </button>
+
                         <button
                             onClick={crearHoja}
                             className="w-full bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold py-2.5 rounded-xl text-sm transition-all"
@@ -215,20 +283,20 @@ function CuadernoDetalle() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`flex-1 rounded-2xl border flex flex-col overflow-hidden ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
+                    className={`flex-1 h-2/3 md:h-full rounded-2xl border flex flex-col overflow-hidden ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-sm"}`}
                 >
                     {hojaActiva ? (
                         <>
                             {/* Toolbar */}
-                            <div className={`flex items-center justify-between px-6 py-3 border-b ${darkMode ? "border-gray-800" : "border-gray-100"}`}>
+                            <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-3 border-b gap-3 sm:gap-0 ${darkMode ? "border-gray-800" : "border-gray-100"}`}>
                                 <input
                                     type="text"
                                     value={titulo}
                                     onChange={(e) => setTitulo(e.target.value)}
-                                    className={`font-bold text-lg bg-transparent outline-none border-none flex-1 ${darkMode ? "text-white" : "text-gray-900"}`}
+                                    className={`font-bold text-lg bg-transparent outline-none border-none w-full sm:flex-1 ${darkMode ? "text-white" : "text-gray-900"}`}
                                     placeholder="Título de la hoja..."
                                 />
-                                <div className="flex items-center gap-3 ml-4">
+                                <div className="flex items-center justify-between w-full sm:w-auto gap-3 sm:ml-4">
                                     <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
                                         Ctrl+S para guardar
                                     </span>
@@ -247,11 +315,11 @@ function CuadernoDetalle() {
                                 value={contenido}
                                 onChange={(e) => setContenido(e.target.value)}
                                 placeholder="Empieza a escribir aquí..."
-                                className={`flex-1 resize-none p-6 text-base outline-none bg-transparent leading-relaxed ${darkMode ? "text-gray-200 placeholder-gray-600" : "text-gray-800 placeholder-gray-400"}`}
+                                className={`flex-1 resize-none p-4 sm:p-6 text-base outline-none bg-transparent leading-relaxed ${darkMode ? "text-gray-200 placeholder-gray-600" : "text-gray-800 placeholder-gray-400"}`}
                             />
 
                             {/* Footer info */}
-                            <div className={`px-6 py-2 border-t flex justify-end ${darkMode ? "border-gray-800" : "border-gray-100"}`}>
+                            <div className={`px-4 sm:px-6 py-2 border-t flex justify-end ${darkMode ? "border-gray-800" : "border-gray-100"}`}>
                                 <span className={`text-xs ${darkMode ? "text-gray-600" : "text-gray-400"}`}>
                                     {contenido.length} caracteres · {contenido.split(/\s+/).filter(Boolean).length} palabras
                                 </span>

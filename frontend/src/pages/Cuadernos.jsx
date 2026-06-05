@@ -11,6 +11,7 @@ function Cuadernos() {
     const [nuevoNombre, setNuevoNombre] = useState("")
     const [nuevaDescripcion, setNuevaDescripcion] = useState("")
     const [error, setError] = useState("")
+    const [cuadernoOpciones, setCuadernoOpciones] = useState(null) // { id, nombre, fotoCuaderno }
 
     const { darkMode } = useContext(ThemeContext)
     const navigate = useNavigate()
@@ -99,9 +100,17 @@ function Cuadernos() {
                         { fotoCuaderno: compressed },
                         { headers: { Authorization: `Bearer ${token}` } }
                     )
-                    cargarCuadernos()
+                    // Actualizar el estado local inmediatamente sin esperar al servidor
+                    setCuadernos(prev => prev.map(c =>
+                        c.id === id ? { ...c, fotoCuaderno: compressed } : c
+                    ))
+                    // Si el modal de opciones está abierto para este cuaderno, actualizar su dato
+                    setCuadernoOpciones(prev =>
+                        prev && prev.id === id ? { ...prev, fotoCuaderno: compressed } : prev
+                    )
                 } catch (error) {
                     console.error("Error guardando foto:", error)
+                    alert("No se pudo guardar la foto de portada. Inténtalo de nuevo.")
                 }
             }
             img.src = reader.result
@@ -137,7 +146,7 @@ function Cuadernos() {
         <div className={`${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} min-h-screen transition-colors duration-300 pb-10`}>
             <Navbar />
 
-            <div className="max-w-7xl mx-auto w-full p-6 mt-6">
+            <div className="max-w-7xl mx-auto w-full p-4 sm:p-6 mt-4 sm:mt-6">
                 
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
                     <div>
@@ -168,83 +177,166 @@ function Cuadernos() {
                         <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Crea tu primer cuaderno para empezar a tomar notas.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
                         {cuadernos.map((cuaderno) => (
                             <motion.div
                                 key={cuaderno.id}
-                                whileHover={{ y: -5 }}
-                                onClick={() => navigate(`/cuadernos/${cuaderno.id}`)}
-                                className={`group cursor-pointer relative overflow-hidden rounded-2xl border transition-all h-52 flex flex-col justify-between shadow-sm hover:shadow-md
-                                    ${darkMode 
-                                        ? 'bg-gray-900 border-gray-800 hover:border-cyan-500/50' 
-                                        : 'bg-white border-gray-200 hover:border-cyan-500/50'}`}
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setCuadernoOpciones(cuaderno)}
+                                className="group cursor-pointer relative flex flex-col"
+                                style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.35))" }}
                             >
-                                {/* Foto de portada */}
-                                {cuaderno.fotoCuaderno && (
-                                    <div 
-                                        className="absolute inset-0 bg-cover bg-center opacity-20 transition-opacity group-hover:opacity-30"
-                                        style={{ backgroundImage: `url(${cuaderno.fotoCuaderno})` }}
-                                    />
-                                )}
-
-                                {/* Pestaña decorativa */}
-                                <div className="absolute top-0 right-6 w-8 h-3 bg-cyan-500 rounded-b-md opacity-80 z-10"></div>
-
-                                {/* Botones superiores - foto y PDF solo premium */}
-                                <div className="absolute top-2 left-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {esPremium && (
-                                        <>
-                                            {/* Botón foto */}
-                                            <label 
-                                                onClick={e => e.stopPropagation()}
-                                                className="cursor-pointer bg-black/50 hover:bg-black/70 text-white rounded-lg p-1.5 transition-all"
-                                                title="Cambiar foto de portada"
-                                            >
-                                                <span className="text-xs">🖼️</span>
-                                                <input 
-                                                    type="file" 
-                                                    accept="image/*" 
-                                                    className="hidden"
-                                                    onChange={(e) => cambiarFotoCuaderno(cuaderno.id, e)}
-                                                />
-                                            </label>
-
-                                            {/* Botón PDF */}
-                                            <button
-                                                onClick={(e) => descargarPdfCuaderno(cuaderno.id, cuaderno.nombre, e)}
-                                                className="bg-black/50 hover:bg-black/70 text-white rounded-lg p-1.5 transition-all"
-                                                title="Exportar como PDF"
-                                            >
-                                                <span className="text-xs">📄</span>
-                                            </button>
-                                        </>
-                                    )}
+                                {/* Lomo del cuaderno */}
+                                <div className="absolute left-0 top-0 bottom-[28px] w-5 rounded-l-lg z-10 flex flex-col justify-center items-center gap-1"
+                                    style={{ background: "linear-gradient(to right, #0e7490, #06b6d4)" }}>
+                                    <div className="w-1 h-1 rounded-full bg-white/40"></div>
+                                    <div className="w-1 h-1 rounded-full bg-white/40"></div>
+                                    <div className="w-1 h-1 rounded-full bg-white/40"></div>
                                 </div>
 
-                                <div className="relative z-10 p-6 pt-8">
-                                    <h3 className="text-xl font-bold truncate pr-4" title={cuaderno.nombre}>
-                                        {cuaderno.nombre}
-                                    </h3>
-                                    <p className={`text-sm mt-2 line-clamp-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        {cuaderno.descripcion || "Sin descripción"}
-                                    </p>
-                                </div>
+                                {/* Cuerpo del cuaderno */}
+                                <div className={`ml-4 rounded-r-xl rounded-tl-sm overflow-hidden flex flex-col flex-1 border-t border-r border-b transition-all
+                                    ${darkMode ? 'border-gray-700 group-hover:border-cyan-500/60' : 'border-gray-300 group-hover:border-cyan-400/70'}`}
+                                    style={{ minHeight: "220px" }}
+                                >
+                                    {/* Zona imagen / portada */}
+                                    <div className="relative flex-1 overflow-hidden" style={{ minHeight: "150px" }}>
+                                        {cuaderno.fotoCuaderno ? (
+                                            <img
+                                                src={cuaderno.fotoCuaderno}
+                                                alt={cuaderno.nombre}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                style={{ minHeight: "150px" }}
+                                            />
+                                        ) : (
+                                            <div className={`w-full h-full flex flex-col items-center justify-center gap-2 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}
+                                                style={{ minHeight: "150px" }}>
+                                                {/* Líneas de papel decorativas */}
+                                                <div className="w-full px-4 flex flex-col gap-2 opacity-30">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <div key={i} className={`h-px w-full ${darkMode ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
+                                                    ))}
+                                                </div>
+                                                <span className="text-3xl absolute">📓</span>
+                                            </div>
+                                        )}
+                                        {/* Gradiente inferior sobre la imagen */}
+                                        {cuaderno.fotoCuaderno && (
+                                            <div className="absolute inset-x-0 bottom-0 h-16"
+                                                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)" }}
+                                            />
+                                        )}
+                                    </div>
 
-                                <div className="relative z-10 flex justify-between items-center px-6 pb-4 pt-2 border-t border-gray-500/20">
-                                    <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                                        {new Date(cuaderno.fechaCreacion).toLocaleDateString()}
-                                    </span>
-                                    <button 
-                                        onClick={(e) => eliminarCuaderno(cuaderno.id, e)}
-                                        className="text-red-500 hover:text-red-400 text-sm font-medium px-2 py-1 rounded-lg hover:bg-red-500/10 transition-colors"
-                                    >
-                                        Eliminar
-                                    </button>
+                                    {/* Pie del cuaderno: título + eliminar */}
+                                    <div className={`px-3 py-2.5 flex items-center justify-between gap-2 border-t
+                                        ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+                                        <span className={`text-sm font-bold truncate leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                                            title={cuaderno.nombre}>
+                                            {cuaderno.nombre}
+                                        </span>
+                                        <button
+                                            onClick={(e) => eliminarCuaderno(cuaderno.id, e)}
+                                            className="shrink-0 text-red-400 hover:text-red-300 hover:bg-red-500/15 rounded-lg p-1 transition-all opacity-0 group-hover:opacity-100"
+                                            title="Eliminar cuaderno"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </motion.div>
                         ))}
                     </div>
                 )}
+
+                {/* Modal opciones cuaderno */}
+                <AnimatePresence>
+                    {cuadernoOpciones && (
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setCuadernoOpciones(null)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                onClick={e => e.stopPropagation()}
+                                className={`w-full max-w-sm p-6 rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`}
+                            >
+                                {/* Miniatura portada */}
+                                {cuadernoOpciones.fotoCuaderno && (
+                                    <div 
+                                        className="w-full h-24 rounded-xl mb-4 bg-cover bg-center opacity-80"
+                                        style={{ backgroundImage: `url(${cuadernoOpciones.fotoCuaderno})` }}
+                                    />
+                                )}
+                                {!cuadernoOpciones.fotoCuaderno && (
+                                    <div className={`w-full h-20 rounded-xl mb-4 flex items-center justify-center text-4xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                                        📓
+                                    </div>
+                                )}
+
+                                <h2 className="text-lg font-bold mb-1 truncate">{cuadernoOpciones.nombre}</h2>
+                                <p className={`text-xs mb-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                    ¿Qué quieres hacer?
+                                </p>
+
+                                <div className="flex flex-col gap-3">
+                                    {/* Ir al cuaderno */}
+                                    <button
+                                        onClick={() => navigate(`/cuadernos/${cuadernoOpciones.id}`)}
+                                        className="w-full bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                                    >
+                                        📖 Abrir cuaderno
+                                    </button>
+
+                                    {/* Foto de portada - solo premium */}
+                                    {esPremium ? (
+                                        <label
+                                            onClick={e => e.stopPropagation()}
+                                            className={`w-full cursor-pointer font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2 border ${
+                                                darkMode 
+                                                    ? 'border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20' 
+                                                    : 'border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100'
+                                            }`}
+                                        >
+                                            🖼️ Cambiar foto de portada
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    cambiarFotoCuaderno(cuadernoOpciones.id, e)
+                                                }}
+                                            />
+                                        </label>
+                                    ) : (
+                                        <button
+                                            onClick={() => { setCuadernoOpciones(null); navigate("/plan") }}
+                                            className={`w-full font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2 border border-dashed ${
+                                                darkMode 
+                                                    ? 'border-gray-700 bg-gray-800/50 text-gray-500 hover:border-gray-500 hover:text-gray-400' 
+                                                    : 'border-gray-300 bg-gray-50 text-gray-400 hover:border-gray-400'
+                                            }`}
+                                        >
+                                            🔒 Foto de portada <span className="text-xs font-normal">(Premium)</span>
+                                        </button>
+                                    )}
+
+                                    <button
+                                        onClick={() => setCuadernoOpciones(null)}
+                                        className={`w-full py-2 rounded-xl text-sm font-medium transition-colors ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
 
                 {/* Modal nuevo cuaderno */}
                 <AnimatePresence>
