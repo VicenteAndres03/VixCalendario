@@ -14,4 +14,6 @@ public class CuadernoDto {
     private String nombre;
 
     private String descripcion;
+
+    private String fotoCuaderno;
 }

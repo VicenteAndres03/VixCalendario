@@ -272,8 +272,16 @@ function Amigos() {
                                             <div key={amigo.id} className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:-translate-y-1 ${
                                                 darkMode ? "bg-gray-800 border-gray-700 hover:border-cyan-500/50" : "bg-gray-50 border-gray-200 hover:border-cyan-400 shadow-sm"
                                             }`}>
-                                                <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">
-                                                    {datosAmigo?.nombre?.charAt(0).toUpperCase() || "?"}
+                                                <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner overflow-hidden">
+                                                    {datosAmigo?.fotoPerfil ? (
+                                                        <img 
+                                                            src={datosAmigo.fotoPerfil} 
+                                                            alt={datosAmigo.nombre}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        datosAmigo?.nombre?.charAt(0).toUpperCase() || "?"
+                                                    )}
                                                 </div>
                                                 <div className="overflow-hidden">
                                                     <p className={`font-bold truncate ${darkMode ? "text-white" : "text-gray-900"}`}>

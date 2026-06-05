@@ -1,6 +1,8 @@
 package apicalendario.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -118,5 +120,23 @@ public class UsuarioController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Ocurrió un error al procesar la solicitud.");
         }
+    }
+
+    @PostMapping("/foto-perfil")
+    public ResponseEntity<String> actualizarFotoPerfil(
+            @RequestBody Map<String, String> body) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String foto = body.get("fotoPerfil");
+        service.actualizarFotoPerfil(email, foto);
+        return ResponseEntity.ok("Foto actualizada");
+    }
+
+    @GetMapping("/foto-perfil/{email}")
+    public ResponseEntity<Map<String, String>> obtenerFotoPerfil(
+            @PathVariable String email) {
+        String foto = service.obtenerFotoPerfil(email);
+        Map<String, String> response = new HashMap<>();
+        response.put("fotoPerfil", foto != null ? foto : "");
+        return ResponseEntity.ok(response);
     }
 }

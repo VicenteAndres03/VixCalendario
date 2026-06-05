@@ -28,62 +28,76 @@ public class MetricasService {
                 User usuario = usuarioRepo.findByEmail(email)
                                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
 
-                // Obtenemos todas las tareas del día
                 LocalDateTime inicioDia = fecha.atStartOfDay();
                 LocalDateTime finDia = fecha.atTime(23, 59, 59);
-                List<Tarea> tareasDelDia = tareaRepo.findByUsuarioAndFechaInicioBetween(usuario, inicioDia, finDia);
+
+                // Obtenemos TODAS las tareas del usuario
+                List<Tarea> todasLasTareas = tareaRepo.findByUsuario(usuario);
+
+                // Filtramos las que aplican para ese día (igual que en
+                // TareaService.TareadelDia)
+                int dayOfWeekNum = fecha.getDayOfWeek().getValue();
+                String[] mapaDias = { "", "L", "M", "X", "J", "V", "S", "D" };
+                String letraDia = mapaDias[dayOfWeekNum];
+
+                List<Tarea> tareasDelDia = todasLasTareas.stream().filter(t -> {
+                        if (t.getFechaInicio() == null)
+                                return false;
+                        LocalDate fechaInicioTarea = t.getFechaInicio().toLocalDate();
+
+                        if (t.isEsRecurrente() && t.getDiasRecurrencia() != null) {
+                                return !fechaInicioTarea.isAfter(fecha) &&
+                                                t.getDiasRecurrencia().contains(letraDia);
+                        } else {
+                                return fechaInicioTarea.equals(fecha);
+                        }
+                }).collect(java.util.stream.Collectors.toList());
 
                 if (tareasDelDia.isEmpty())
                         return;
 
-                // 🛡️ FILTRO ANTI-TRAMPA: Contar solo tareas con nombres diferentes
+                // Anti-trampa: nombres únicos en ese día
                 long tareasUnicas = tareasDelDia.stream()
-                                .map(t -> t.getNombre().toLowerCase().trim()) // "Descansar " y "descansar" contarán
-                                                                              // como la misma
-                                .distinct() // Filtra para que queden solo las diferentes
+                                .map(t -> t.getNombre().toLowerCase().trim())
+                                .distinct()
                                 .count();
 
-                // Validamos que existan al menos 3 tareas distintas en el día (reducido de 5 a
-                // 3)
-                if (tareasUnicas < 3) {
-                        return; // No evalúa la racha si no cumple el mínimo de esfuerzo
-                }
+                if (tareasUnicas < 3)
+                        return;
 
-                // Calculamos el porcentaje de completadas
-                long completadas = tareasDelDia.stream()
-                                .filter(t -> t.getEstado() == Estado.TERMINADO)
-                                .count();
+                // Para tareas recurrentes, obtenemos el estado real de ese día
+                long completadas = tareasDelDia.stream().filter(t -> {
+                        if (t.isEsRecurrente() && t.getHistorialEstados() != null
+                                        && !t.getHistorialEstados().isEmpty()) {
+                                String prefijoFecha = fecha.toString() + ":";
+                                for (String registro : t.getHistorialEstados().split(",")) {
+                                        if (registro.startsWith(prefijoFecha)) {
+                                                return Estado.TERMINADO.name().equals(registro.split(":")[1]);
+                                        }
+                                }
+                                return t.getEstado() == Estado.TERMINADO;
+                        }
+                        return t.getEstado() == Estado.TERMINADO;
+                }).count();
 
                 double porcentaje = (completadas * 100.0) / tareasDelDia.size();
 
-                // Si completó 80% o más, es un día productivo
                 if (porcentaje >= 80) {
                         LocalDate ultimoDia = usuario.getUltimoDiaProductivo();
 
                         if (ultimoDia == null) {
-                                // Primera vez
                                 usuario.setRachaActual(1);
                         } else if (ultimoDia.equals(fecha.minusDays(1))) {
-                                // Día consecutivo
                                 usuario.setRachaActual(usuario.getRachaActual() + 1);
                         } else if (!ultimoDia.equals(fecha)) {
-                                // Rompió la racha
                                 usuario.setRachaActual(1);
                         }
 
-                        // Actualizamos mejor racha
                         if (usuario.getRachaActual() > usuario.getMejorRacha()) {
                                 usuario.setMejorRacha(usuario.getRachaActual());
                         }
 
-                        // Actualizamos días para mes gratis
                         usuario.setDiasGratuitos(usuario.getDiasGratuitos() + 1);
-
-                        // Cada 100 días → mes gratis (puedes manejar esto con un email o flag)
-                        if (usuario.getDiasGratuitos() % 100 == 0) {
-                                // TODO: activar mes gratis al usuario
-                        }
-
                         usuario.setUltimoDiaProductivo(fecha);
                         usuarioRepo.save(usuario);
                 }

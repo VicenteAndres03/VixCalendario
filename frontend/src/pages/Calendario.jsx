@@ -65,6 +65,10 @@ function Calendario(){
         localStorage.removeItem(keyFondo)
     }
 
+    const [transparencia, setTransparencia] = useState(
+        () => parseFloat(localStorage.getItem(`transparenciaCalendario_${emailUsuario}`)) || 0.4
+    )
+
     const formatearFecha = (año, mes, dia) => {
         return `${año}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`
     }
@@ -192,14 +196,24 @@ function Calendario(){
             <div className="relative z-10">
                 <Navbar />
 
-                {/* ── CONTENEDOR TIPO CRISTAL (Opacidad optimizada a /40 y desenfoque suavizado) ── */}
-                <div className={`p-6 max-w-7xl mx-auto w-full mt-6 transition-all duration-300 ${
-                    fondoImagen 
-                        ? (darkMode 
-                            ? 'bg-gray-950/40 backdrop-blur-md transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-gray-700/50' 
-                            : 'bg-white/40 backdrop-blur-md transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.15)] border border-white/60') 
-                        : ''
-                }`}>
+                {/* ── CONTENEDOR TIPO CRISTAL (Opacidad optimizada y fondo dinámico) ── */}
+                <div
+                    className={`p-6 max-w-7xl mx-auto w-full mt-6 transition-all duration-300 ${
+                        fondoImagen
+                            ? 'backdrop-blur-md transform-gpu rounded-[2rem] shadow-[0_0_40px_rgba(0,0,0,0.15)] border border-gray-700/50'
+                            : ''
+                    }`}
+                    style={
+                        fondoImagen
+                            ? {
+                                backgroundColor: darkMode
+                                    ? `rgba(3, 7, 18, ${transparencia})`
+                                    : `rgba(255, 255, 255, ${transparencia})`,
+                            }
+                            : undefined
+                    }
+                >
+                    
                     
                     {/* Header Superior Fijo */}
                     <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6 min-h-[60px]">
@@ -226,6 +240,8 @@ function Calendario(){
                                         >
                                             ✕
                                         </button>
+
+                                        
                                     )}
                                 </div>
                             ) : (
@@ -237,6 +253,24 @@ function Calendario(){
                                     >
                                         <span>🔒</span> <span className="hidden sm:inline">Fondo</span>
                                     </button>
+                                </div>
+                            )}
+                            {esPremium && fondoImagen && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-400">Transparencia</span>
+                                    <input 
+                                        type="range" 
+                                        min="0" 
+                                        max="1" 
+                                        step="0.1"
+                                        value={transparencia}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value)
+                                            setTransparencia(val)
+                                            localStorage.setItem(`transparenciaCalendario_${emailUsuario}`, val)
+                                        }}
+                                        className="w-24 accent-cyan-500"
+                                    />
                                 </div>
                             )}
                         </div>

@@ -212,4 +212,17 @@ public class UsuarioService {
 
         return "Te hemos enviado un correo con una contraseña temporal.";
     }
+
+    public void actualizarFotoPerfil(String email, String foto) {
+        User usuario = repositorio.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+        usuario.setFotoPerfil(foto);
+        repositorio.save(usuario);
+    }
+
+    public String obtenerFotoPerfil(String email) {
+        User usuario = repositorio.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+        return usuario.getFotoPerfil();
+    }
 }

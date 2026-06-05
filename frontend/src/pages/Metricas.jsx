@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts"
 import Navbar from "../components/Navbar"
 import axios from "axios"

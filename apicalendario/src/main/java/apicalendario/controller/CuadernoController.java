@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cuadernos")
@@ -47,5 +48,14 @@ public class CuadernoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<String> eliminarCuaderno(@PathVariable Long id) {
         return ResponseEntity.ok(cuadernoService.eliminarCuaderno(id));
+    }
+
+    @PatchMapping("/{id}/foto")
+    public ResponseEntity<Cuaderno> actualizarFotoCuaderno(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            Principal principal) {
+        String foto = body.get("fotoCuaderno");
+        return ResponseEntity.ok(cuadernoService.actualizarFotoCuaderno(id, foto));
     }
 }

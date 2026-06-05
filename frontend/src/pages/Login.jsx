@@ -38,11 +38,19 @@ function Login() {
             localStorage.setItem("apellido", respuesta.apellido)
             localStorage.setItem("email", respuesta.email)
             localStorage.setItem("rol", respuesta.rol)
-            localStorage.setItem("suscripcion", respuesta.estadoSuscripcion || "INACTIVO") 
-            
-            // Si en el futuro agregas la prueba, la guardamos aquí también
-            if(respuesta.pruebaConsumida !== undefined) {
-                localStorage.setItem("pruebaConsumida", respuesta.pruebaConsumida)
+            localStorage.setItem("suscripcion", respuesta.estadoSuscripcion || "INACTIVO")
+
+            // Cargar foto desde backend al iniciar sesión
+            try {
+                const resFoto = await axios.get(
+                    `https://api.vix-flow.com/api/usuarios/foto-perfil/${respuesta.email}`,
+                    { headers: { Authorization: `Bearer ${respuesta.token}` } }
+                )
+                if (resFoto.data.fotoPerfil) {
+                    localStorage.setItem("fotoPerfil", resFoto.data.fotoPerfil)
+                }
+            } catch (e) {
+                console.error("Error cargando foto:", e)
             }
             
             navigate("/calendario")

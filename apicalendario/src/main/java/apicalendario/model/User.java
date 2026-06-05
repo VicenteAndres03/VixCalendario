@@ -80,4 +80,7 @@ public class User {
     @Column(nullable = true)
     private String mercadoPagoSuscripcionId;
 
+    @Column(columnDefinition = "TEXT", nullable = true)
+    private String fotoPerfil;
+
 }

@@ -45,6 +45,7 @@ public class CuadernoService {
         Cuaderno nuevoCuaderno = Cuaderno.builder()
                 .nombre(dto.getNombre())
                 .descripcion(dto.getDescripcion())
+                .fotoCuaderno(dto.getFotoCuaderno())
                 .usuario(usuario)
                 .build();
 
@@ -72,5 +73,12 @@ public class CuadernoService {
         cuadernoRepo.delete(cuaderno);
 
         return "Cuaderno eliminado correctamente";
+    }
+
+    public Cuaderno actualizarFotoCuaderno(Long id, String foto) {
+        Cuaderno cuaderno = cuadernoRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cuaderno no encontrado"));
+        cuaderno.setFotoCuaderno(foto);
+        return cuadernoRepo.save(cuaderno);
     }
 }

@@ -31,4 +31,7 @@ public class Cuaderno {
     @Builder.Default
     @Column(nullable = false)
     private LocalDateTime fechaCreacion = LocalDateTime.now();
+
+    @Column(columnDefinition = "TEXT", nullable = true)
+    private String fotoCuaderno;
 }

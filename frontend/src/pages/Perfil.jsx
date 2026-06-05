@@ -47,21 +47,32 @@ function Perfil() {
     const [rachaActual, setRachaActual] = useState(0)
  
     useEffect(() => {
-        /**
-         * CORRECCIÓN: Siempre sincronizamos el estado de suscripción contra el backend
-         * al cargar el perfil, no solo cuando llega el query param ?pago=exitoso.
-         *
-         * Esto corrige el caso donde el usuario llega al perfil desde otra ruta
-         * (ej: desde el calendario) con el localStorage desactualizado.
-         */
         sincronizarSuscripcion()
- 
+        
+        // Cargar foto desde el backend
+        const cargarFotoDesdeBackend = async () => {
+            try {
+                const res = await axios.get(
+                    `https://api.vix-flow.com/api/usuarios/foto-perfil/${emailGuardado}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                )
+                if (res.data.fotoPerfil) {
+                    setFotoPerfil(res.data.fotoPerfil)
+                    localStorage.setItem("fotoPerfil", res.data.fotoPerfil)
+                }
+            } catch (error) {
+                console.error("Error cargando foto:", error)
+            }
+        }
+        
+        cargarFotoDesdeBackend()
+        
+        // resto del useEffect...
         const queryParams = new URLSearchParams(window.location.search)
         if (queryParams.get("pago") === "exitoso") {
             setMensaje({ tipo: "exito", texto: "¡Pago completado! Estamos validando tu suscripción Premium 💎" })
             iniciarPolling()
         }
- 
         cargarMetricas()
     }, [])
  
@@ -142,17 +153,42 @@ function Perfil() {
  
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
  
-    const handleFotoChange = (e) => {
-        const file = e.target.files[0]
-        if (file) {
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setFotoPerfil(reader.result)
-                localStorage.setItem("fotoPerfil", reader.result)
+    const handleFotoChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+        // Comprimir imagen
+        const img = new Image()
+        img.onload = async () => {
+            const canvas = document.createElement('canvas')
+            const MAX = 200 // pequeño para foto de perfil
+            let w = img.width, h = img.height
+            if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
+            if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
+            canvas.width = w
+            canvas.height = h
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+            const compressed = canvas.toDataURL('image/jpeg', 0.7)
+            
+            setFotoPerfil(compressed)
+            localStorage.setItem("fotoPerfil", compressed)
+            
+            // Guardar en el backend
+            try {
+                await axios.post("https://api.vix-flow.com/api/usuarios/foto-perfil",
+                    { fotoPerfil: compressed },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                )
+            } catch (error) {
+                console.error("Error guardando foto:", error)
             }
-            reader.readAsDataURL(file)
         }
+        img.src = reader.result
     }
+    reader.readAsDataURL(file)
+}
  
     const handleSubmit = async (e) => {
         e.preventDefault()
