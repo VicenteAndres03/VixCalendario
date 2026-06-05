@@ -51,6 +51,10 @@ function Tablero(){
     // 🔥 NUEVO ESTADO PARA EL MODAL DE CONFIRMACIÓN 🔥
     const [modalConfirmacion, setModalConfirmacion] = useState({ visible: false, idTarea: null })
 
+    // Modal de detalles de tarea
+    const [tareaDetalle, setTareaDetalle] = useState(null)
+    const [modalDetalle, setModalDetalle] = useState(false)
+
     const infoColumnas = [ { id: "POR_HACER", titulo: "Por Hacer" }, { id: "EN_PROCESO", titulo: "En Proceso" }, { id: "TERMINADO", titulo: "Terminado" } ]
 
     const cargarMetricas = async () => {
@@ -327,13 +331,22 @@ function Tablero(){
                                                     <Draggable key={tarea.id} draggableId={tarea.id} index={index}>
                                                         {(provided, snapshot) => (
                                                             <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`border rounded-xl p-4 cursor-grab active:cursor-grabbing transition-all duration-300 ${snapshot.isDragging ? "border-cyan-500 shadow-lg shadow-cyan-500/20 rotate-2 scale-105" : darkMode ? "bg-gray-900 border-gray-700 hover:border-cyan-500/50" : "bg-white border-gray-200 shadow-sm hover:border-cyan-500/30"}`}>
+                                                                <motion.div 
+                                                                    initial={{ opacity: 0, y: 20 }} 
+                                                                    animate={{ opacity: 1, y: 0 }} 
+                                                                    onClick={() => {
+                                                                        if (!snapshot.isDragging) {
+                                                                            setTareaDetalle(tarea)
+                                                                            setModalDetalle(true)
+                                                                        }
+                                                                    }}
+                                                                    className={`border rounded-xl p-4 cursor-grab active:cursor-grabbing transition-all duration-300 ${snapshot.isDragging ? "border-cyan-500 shadow-lg shadow-cyan-500/20 rotate-2 scale-105" : darkMode ? "bg-gray-900 border-gray-700 hover:border-cyan-500/50" : "bg-white border-gray-200 shadow-sm hover:border-cyan-500/30"}`}>
                                                                     <div className="flex items-start justify-between mb-1">
                                                                         <h3 className={`font-medium flex items-center ${darkMode ? "text-white" : "text-gray-800"} ${columna.id === "TERMINADO" ? "line-through opacity-50" : ""}`}>{tarea.nombre}</h3>
                                                                         <div className="flex gap-3 items-center">
-                                                                            <button onClick={() => abrirModalEditar(tarea)} className="text-gray-400 hover:text-cyan-500 transition-colors">✏️</button>
+                                                                            <button onClick={(e) => { e.stopPropagation(); abrirModalEditar(tarea) }} className="text-gray-400 hover:text-cyan-500 transition-colors">✏️</button>
                                                                             {/* 🔥 CAMBIADO: AHORA LLAMA A INTENTAR ELIMINAR 🔥 */}
-                                                                            <button onClick={() => intentarEliminar(tarea.id)} className="text-gray-400 hover:text-red-400 transition-colors">🗑️</button>
+                                                                            <button onClick={(e) => { e.stopPropagation(); intentarEliminar(tarea.id) }} className="text-gray-400 hover:text-red-400 transition-colors">🗑️</button>
                                                                         </div>
                                                                     </div>
                                                                     {tarea.descripcion && tarea.descripcion !== "Sin descripción" && <p className={`text-sm mt-1 mb-2 line-clamp-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{tarea.descripcion}</p>}
@@ -414,6 +427,122 @@ function Tablero(){
                                 </button>
                                 <button onClick={confirmarEliminacion} className="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/20 transition-all">
                                     Sí, eliminar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* MODAL DETALLES DE TAREA */}
+            <AnimatePresence>
+                {modalDetalle && tareaDetalle && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }} 
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                        onClick={() => setModalDetalle(false)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={e => e.stopPropagation()}
+                            className={`border rounded-2xl p-8 w-full max-w-md shadow-2xl ${
+                                darkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
+                            }`}
+                        >
+                            {/* Estado */}
+                            <div className="flex items-center justify-between mb-4">
+                                <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                                    tareaDetalle.estado === "TERMINADO" 
+                                        ? "bg-green-500/20 text-green-400"
+                                        : tareaDetalle.estado === "EN_PROCESO"
+                                            ? "bg-yellow-500/20 text-yellow-400"
+                                            : "bg-red-500/20 text-red-400"
+                                }`}>
+                                    {tareaDetalle.estado === "TERMINADO" ? "✅ Terminado" 
+                                        : tareaDetalle.estado === "EN_PROCESO" ? "⚡ En Proceso" 
+                                        : "📋 Por Hacer"}
+                                </span>
+                                <button 
+                                    onClick={() => setModalDetalle(false)}
+                                    className="text-gray-400 hover:text-white text-lg"
+                                >
+                                    ✖
+                                </button>
+                            </div>
+
+                            {/* Nombre */}
+                            <h2 className={`text-2xl font-bold mb-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                {tareaDetalle.nombre}
+                            </h2>
+
+                            {/* Descripción */}
+                            <div className={`p-4 rounded-xl mb-4 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
+                                <p className={`text-sm font-medium mb-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                    Descripción
+                                </p>
+                                <p className={darkMode ? "text-gray-200" : "text-gray-700"}>
+                                    {tareaDetalle.descripcion && tareaDetalle.descripcion !== "Sin descripción" 
+                                        ? tareaDetalle.descripcion 
+                                        : "Sin descripción"}
+                                </p>
+                            </div>
+
+                            {/* Horario */}
+                            <div className={`p-4 rounded-xl mb-4 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
+                                <p className={`text-sm font-medium mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                    Horario
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-cyan-500">🕒</span>
+                                    <span className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                                        {new Date(tareaDetalle.fechaInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                    <span className="text-gray-400">→</span>
+                                    <span className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                                        {new Date(tareaDetalle.fechaFin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Recurrencia */}
+                            {tareaDetalle.esRecurrente && (
+                                <div className={`p-4 rounded-xl mb-4 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
+                                    <p className={`text-sm font-medium mb-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                        Recurrencia
+                                    </p>
+                                    <p className="text-cyan-400 text-sm font-bold">
+                                        🔄 {tareaDetalle.diasRecurrencia?.replace(/,/g, ' - ') || 'Diario'}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Botones */}
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    onClick={() => {
+                                        setModalDetalle(false)
+                                        abrirModalEditar(tareaDetalle)
+                                    }}
+                                    className={`flex-1 py-3 rounded-xl font-bold transition-all ${
+                                        darkMode 
+                                            ? "bg-gray-800 hover:bg-gray-700 text-white" 
+                                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                                    }`}
+                                >
+                                    ✏️ Editar
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setModalDetalle(false)
+                                        intentarEliminar(tareaDetalle.id)
+                                    }}
+                                    className="flex-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold py-3 rounded-xl border border-red-500/20 transition-all"
+                                >
+                                    🗑️ Eliminar
                                 </button>
                             </div>
                         </motion.div>

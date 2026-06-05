@@ -214,13 +214,26 @@ function Amigos() {
                                         <div key={solicitud.id} className={`p-4 rounded-xl border flex flex-col gap-3 ${
                                             darkMode ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"
                                         }`}>
-                                            <div>
-                                                <p className={`font-bold text-sm ${darkMode ? "text-white" : "text-gray-800"}`}>
-                                                    {solicitud.solicitante?.nombre || "Usuario"}
-                                                </p>
-                                                <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                                                    {solicitud.solicitante?.email}
-                                                </p>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden shrink-0">
+                                                    {solicitud.solicitante?.fotoPerfil ? (
+                                                        <img 
+                                                            src={solicitud.solicitante.fotoPerfil}
+                                                            alt={solicitud.solicitante.nombre}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        solicitud.solicitante?.nombre?.charAt(0).toUpperCase() || "?"
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className={`font-bold text-sm ${darkMode ? "text-white" : "text-gray-800"}`}>
+                                                        {solicitud.solicitante?.nombre || "Usuario"}
+                                                    </p>
+                                                    <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                                        {solicitud.solicitante?.email}
+                                                    </p>
+                                                </div>
                                             </div>
                                             <div className="flex gap-2">
                                                 <button 
