@@ -139,4 +139,11 @@ public class UsuarioController {
         response.put("fotoPerfil", foto != null ? foto : "");
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/foto-perfil")
+    public ResponseEntity<String> borrarFotoPerfil() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        service.actualizarFotoPerfil(email, null);
+        return ResponseEntity.ok("Foto eliminada");
+    }
 }

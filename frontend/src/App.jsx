@@ -11,6 +11,7 @@ import TableroProyecto from "./pages/TableroProyecto"
 import AceptarInvitacion from "./pages/AceptarInvitacion"
 import Metricas from "./pages/Metricas"
 import DashboardAdmin from "./pages/DashboardAdmin"
+import Dashboard from "./pages/Dashboard"
 import Plan from "./pages/Plan" 
 import Habitos from "./pages/Habitos" 
 import TableroPublico from "./pages/TableroPublico"
@@ -55,6 +56,7 @@ function App() {
             <Route path="/nosotros" element={<Nosotros />} />
 
             {/* 🔥 RUTAS BÁSICAS GRATUITAS 🔥 */}
+            <Route path="/dashboard" element={<RutaProtegida><Dashboard /></RutaProtegida>} />
             <Route path="/calendario" element={<RutaProtegida><Calendario /></RutaProtegida>} />
             <Route path="/tablero" element={<RutaProtegida><Tablero /></RutaProtegida>} />
             <Route path="/tablero/:fecha" element={<RutaProtegida><Tablero /></RutaProtegida>} />

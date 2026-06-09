@@ -21,25 +21,27 @@ public class MetricasService {
         private final UsuarioRepository usuarioRepo;
 
         // ─────────────────────────────────────────
-        // RACHA - Se llama cada vez que el usuario
-        // cambia el estado de una tarea
+        // RACHA
         // ─────────────────────────────────────────
         public void actualizarRacha(String email, LocalDate fecha) {
                 User usuario = usuarioRepo.findByEmail(email)
                                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
 
-                LocalDateTime inicioDia = fecha.atStartOfDay();
-                LocalDateTime finDia = fecha.atTime(23, 59, 59);
+                // 🛡️ FIX 1: No procesar fechas futuras.
+                // Si el usuario agenda tareas con anticipación y las completa antes,
+                // eso no debe contar como día productivo hasta que llegue ese día.
+                LocalDate hoy = LocalDate.now();
+                if (fecha.isAfter(hoy)) {
+                        return;
+                }
 
-                // Obtenemos TODAS las tareas del usuario
                 List<Tarea> todasLasTareas = tareaRepo.findByUsuario(usuario);
 
-                // Filtramos las que aplican para ese día (igual que en
-                // TareaService.TareadelDia)
                 int dayOfWeekNum = fecha.getDayOfWeek().getValue();
                 String[] mapaDias = { "", "L", "M", "X", "J", "V", "S", "D" };
                 String letraDia = mapaDias[dayOfWeekNum];
 
+                // Filtramos solo las tareas que pertenecen al día 'fecha'
                 List<Tarea> tareasDelDia = todasLasTareas.stream().filter(t -> {
                         if (t.getFechaInicio() == null)
                                 return false;
@@ -49,14 +51,15 @@ public class MetricasService {
                                 return !fechaInicioTarea.isAfter(fecha) &&
                                                 t.getDiasRecurrencia().contains(letraDia);
                         } else {
+                                // Para tareas normales: solo las agendadas exactamente para 'fecha'.
+                                // Tareas de otros días (pasados o futuros) no se mezclan.
                                 return fechaInicioTarea.equals(fecha);
                         }
-                }).collect(java.util.stream.Collectors.toList());
+                }).collect(Collectors.toList());
 
                 if (tareasDelDia.isEmpty())
                         return;
 
-                // Anti-trampa: nombres únicos en ese día
                 long tareasUnicas = tareasDelDia.stream()
                                 .map(t -> t.getNombre().toLowerCase().trim())
                                 .distinct()
@@ -65,20 +68,9 @@ public class MetricasService {
                 if (tareasUnicas < 3)
                         return;
 
-                // Para tareas recurrentes, obtenemos el estado real de ese día
-                long completadas = tareasDelDia.stream().filter(t -> {
-                        if (t.isEsRecurrente() && t.getHistorialEstados() != null
-                                        && !t.getHistorialEstados().isEmpty()) {
-                                String prefijoFecha = fecha.toString() + ":";
-                                for (String registro : t.getHistorialEstados().split(",")) {
-                                        if (registro.startsWith(prefijoFecha)) {
-                                                return Estado.TERMINADO.name().equals(registro.split(":")[1]);
-                                        }
-                                }
-                                return t.getEstado() == Estado.TERMINADO;
-                        }
-                        return t.getEstado() == Estado.TERMINADO;
-                }).count();
+                long completadas = tareasDelDia.stream()
+                                .filter(t -> obtenerEstadoEfectivo(t, fecha) == Estado.TERMINADO)
+                                .count();
 
                 double porcentaje = (completadas * 100.0) / tareasDelDia.size();
 
@@ -86,10 +78,23 @@ public class MetricasService {
                         LocalDate ultimoDia = usuario.getUltimoDiaProductivo();
 
                         if (ultimoDia == null) {
+                                // Primera vez que alcanza el umbral
                                 usuario.setRachaActual(1);
+                        } else if (ultimoDia.equals(fecha)) {
+                                // 🛡️ FIX 2: Este día ya fue registrado como productivo.
+                                // Puede ocurrir si el usuario completa varias tareas en el mismo día
+                                // (cada una dispara actualizarRacha). No sumamos ni reseteamos.
+                                // Solo actualizamos mejorRacha por si acaso y salimos.
+                                if (usuario.getRachaActual() > usuario.getMejorRacha()) {
+                                        usuario.setMejorRacha(usuario.getRachaActual());
+                                }
+                                usuarioRepo.save(usuario);
+                                return;
                         } else if (ultimoDia.equals(fecha.minusDays(1))) {
+                                // Día consecutivo → extender racha
                                 usuario.setRachaActual(usuario.getRachaActual() + 1);
-                        } else if (!ultimoDia.equals(fecha)) {
+                        } else {
+                                // Hubo un salto de días → reiniciar racha desde 1
                                 usuario.setRachaActual(1);
                         }
 
@@ -97,6 +102,7 @@ public class MetricasService {
                                 usuario.setMejorRacha(usuario.getRachaActual());
                         }
 
+                        // 🛡️ FIX 3: diasGratuitos solo se incrementa una vez por día productivo
                         usuario.setDiasGratuitos(usuario.getDiasGratuitos() + 1);
                         usuario.setUltimoDiaProductivo(fecha);
                         usuarioRepo.save(usuario);
@@ -163,7 +169,7 @@ public class MetricasService {
                                 .map(Map.Entry::getKey)
                                 .orElse("N/A");
 
-                // Promedio diario (últimos 30 días)
+                // Promedio diario
                 long diasConTareas = todasLasTareas.stream()
                                 .filter(t -> t.getFechaInicio() != null)
                                 .map(t -> t.getFechaInicio().toLocalDate())
@@ -173,7 +179,7 @@ public class MetricasService {
                 double promedioDiario = diasConTareas == 0 ? 0
                                 : Math.round((totalCompletadas * 10.0) / diasConTareas) / 10.0;
 
-                // ── Tareas de HOY por estado ──
+                // ── Tareas de HOY por estado (con historialEstados para recurrentes) ──
                 int dayOfWeekNum = hoy.getDayOfWeek().getValue();
                 String[] mapaDias = { "", "L", "M", "X", "J", "V", "S", "D" };
                 String letraHoy = mapaDias[dayOfWeekNum];
@@ -190,13 +196,16 @@ public class MetricasService {
                 }).collect(Collectors.toList());
 
                 long hoyPorHacer = tareasDeHoy.stream()
-                                .filter(t -> t.getEstado() == Estado.POR_HACER).count();
+                                .filter(t -> obtenerEstadoEfectivo(t, hoy) == Estado.POR_HACER)
+                                .count();
                 long hoyEnProceso = tareasDeHoy.stream()
-                                .filter(t -> t.getEstado() == Estado.EN_PROCESO).count();
+                                .filter(t -> obtenerEstadoEfectivo(t, hoy) == Estado.EN_PROCESO)
+                                .count();
                 long hoyCompletadas = tareasDeHoy.stream()
-                                .filter(t -> t.getEstado() == Estado.TERMINADO).count();
+                                .filter(t -> obtenerEstadoEfectivo(t, hoy) == Estado.TERMINADO)
+                                .count();
 
-                // Armamos la respuesta
+                // Armar respuesta
                 Map<String, Object> metricas = new LinkedHashMap<>();
                 metricas.put("totalCreadas", totalCreadas);
                 metricas.put("totalCompletadas", totalCompletadas);
@@ -238,7 +247,6 @@ public class MetricasService {
                                         .count();
                         int progreso = totalTareas == 0 ? 0 : (int) ((completadas * 100) / totalTareas);
 
-                        // Miembro más activo (el que tiene más tareas asignadas completadas)
                         Map<String, Long> tareasPorMiembro = tareas.stream()
                                         .filter(t -> t.getEstado() == Estado.TERMINADO && t.getAsignadoA() != null)
                                         .collect(Collectors.groupingBy(
@@ -250,7 +258,6 @@ public class MetricasService {
                                         .map(Map.Entry::getKey)
                                         .orElse("Sin datos");
 
-                        // Tareas por estado
                         long porHacer = tareas.stream().filter(t -> t.getEstado() == Estado.POR_HACER).count();
                         long enProceso = tareas.stream().filter(t -> t.getEstado() == Estado.EN_PROCESO).count();
 
@@ -276,8 +283,34 @@ public class MetricasService {
         }
 
         // ─────────────────────────────────────────
-        // HELPER
+        // HELPERS
         // ─────────────────────────────────────────
+
+        /**
+         * Devuelve el estado efectivo de una tarea para una fecha específica.
+         * Para tareas recurrentes consulta historialEstados.
+         * Para tareas normales devuelve el campo estado directamente.
+         */
+        private Estado obtenerEstadoEfectivo(Tarea tarea, LocalDate fecha) {
+                if (tarea.isEsRecurrente()
+                                && tarea.getHistorialEstados() != null
+                                && !tarea.getHistorialEstados().isEmpty()) {
+                        String prefijoFecha = fecha.toString() + ":";
+                        for (String registro : tarea.getHistorialEstados().split(",")) {
+                                if (registro.startsWith(prefijoFecha)) {
+                                        try {
+                                                return Estado.valueOf(registro.split(":")[1]);
+                                        } catch (IllegalArgumentException e) {
+                                                // registro malformado, caemos al default
+                                        }
+                                }
+                        }
+                        // Sin registro para este día = no marcada = POR_HACER
+                        return Estado.POR_HACER;
+                }
+                return tarea.getEstado();
+        }
+
         private String traducirDia(String dia) {
                 return switch (dia) {
                         case "MONDAY" -> "Lunes";

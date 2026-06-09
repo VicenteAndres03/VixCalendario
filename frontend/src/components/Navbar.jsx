@@ -68,7 +68,7 @@ function Navbar() {
                     
                     {/* 1. IZQUIERDA: Logo (Toma 1/3 del espacio para empujar el centro) */}
                     <div className="flex-1 flex justify-start">
-                        <div className="flex-shrink-0 flex items-center cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate("/calendario")}>
+                        <div className="flex-shrink-0 flex items-center cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate("/dashboard")}>
                             <img className="h-8 w-auto" src={logoVix} alt="VixCalendario" />
                             <span className="ml-2 text-xl font-bold tracking-tight bg-gradient-to-r from-cyan-500 to-purple-500 bg-clip-text text-transparent hidden sm:block">
                                 Vix-Flow

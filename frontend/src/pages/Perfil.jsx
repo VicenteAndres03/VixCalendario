@@ -159,11 +159,10 @@ function Perfil() {
 
     const reader = new FileReader()
     reader.onloadend = async () => {
-        // Comprimir imagen
         const img = new Image()
         img.onload = async () => {
             const canvas = document.createElement('canvas')
-            const MAX = 400 // suficiente resolución para foto de perfil nítida en pantallas retina
+            const MAX = 400
             let w = img.width, h = img.height
             if (w > h) { h = Math.round(h * MAX / w); w = MAX }
             else { w = Math.round(w * MAX / h); h = MAX }
@@ -175,7 +174,6 @@ function Perfil() {
             setFotoPerfil(compressed)
             localStorage.setItem("fotoPerfil", compressed)
             
-            // Guardar en el backend
             try {
                 await axios.post("https://api.vix-flow.com/api/usuarios/foto-perfil",
                     { fotoPerfil: compressed },
@@ -290,7 +288,30 @@ function Perfil() {
                                         <input type="file" accept="image/*" className="hidden" onChange={handleFotoChange} />
                                     </label>
                                 </div>
-                                {/* Insignia Premium si aplica */}
+
+                                {/* Botón borrar foto — solo aparece si hay foto */}
+                                {fotoPerfil && (
+                                    <button
+                                        onClick={async (e) => {
+                                            e.preventDefault()
+                                            try {
+                                                await axios.delete("https://api.vix-flow.com/api/usuarios/foto-perfil", {
+                                                    headers: { Authorization: `Bearer ${token}` }
+                                                })
+                                                setFotoPerfil(null)
+                                                localStorage.removeItem("fotoPerfil")
+                                            } catch (error) {
+                                                console.error("Error al borrar foto:", error)
+                                            }
+                                        }}
+                                        className="absolute -top-1 -right-1 w-7 h-7 bg-red-500 hover:bg-red-400 rounded-full border-2 border-gray-950 flex items-center justify-center text-white text-[10px] font-bold z-20 transition-all shadow-md"
+                                        title="Eliminar foto de perfil"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+
+                                {/* Insignia Premium */}
                                 {suscripcion === "ACTIVO" && (
                                     <div className="absolute bottom-1 right-1 w-8 h-8 bg-purple-500 rounded-full border-2 border-gray-950 flex items-center justify-center shadow-lg" title="Usuario Premium">
                                         <span className="text-sm drop-shadow-md">💎</span>
