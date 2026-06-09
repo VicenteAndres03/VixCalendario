@@ -163,14 +163,14 @@ function Perfil() {
         const img = new Image()
         img.onload = async () => {
             const canvas = document.createElement('canvas')
-            const MAX = 200 // pequeño para foto de perfil
+            const MAX = 400 // suficiente resolución para foto de perfil nítida en pantallas retina
             let w = img.width, h = img.height
-            if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
-            if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+            else { w = Math.round(w * MAX / h); h = MAX }
             canvas.width = w
             canvas.height = h
             canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-            const compressed = canvas.toDataURL('image/jpeg', 0.7)
+            const compressed = canvas.toDataURL('image/jpeg', 0.9)
             
             setFotoPerfil(compressed)
             localStorage.setItem("fotoPerfil", compressed)

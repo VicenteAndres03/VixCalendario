@@ -90,10 +90,14 @@ function Cuadernos() {
             const img = new Image()
             img.onload = async () => {
                 const canvas = document.createElement('canvas')
-                canvas.width = 400
-                canvas.height = 200
-                canvas.getContext('2d').drawImage(img, 0, 0, 400, 200)
-                const compressed = canvas.toDataURL('image/jpeg', 0.7)
+                // Respetar proporción de la imagen original
+                // Usar ancho máximo de 800px para buena calidad en tarjetas
+                const MAX_W = 800
+                const ratio = img.height / img.width
+                canvas.width = MAX_W
+                canvas.height = Math.round(MAX_W * ratio)
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+                const compressed = canvas.toDataURL('image/jpeg', 0.85)
                 try {
                     await axios.patch(
                         `https://api.vix-flow.com/api/cuadernos/${id}/foto`,
@@ -188,30 +192,27 @@ function Cuadernos() {
                                 style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.35))" }}
                             >
                                 {/* Lomo del cuaderno */}
-                                <div className="absolute left-0 top-0 bottom-[28px] w-5 rounded-l-lg z-10 flex flex-col justify-center items-center gap-1"
-                                    style={{ background: "linear-gradient(to right, #0e7490, #06b6d4)" }}>
+                                <div className="absolute left-0 top-0 w-5 rounded-l-lg z-10 flex flex-col justify-center items-center gap-1"
+                                    style={{ background: "linear-gradient(to right, #0e7490, #06b6d4)", bottom: "38px" }}>
                                     <div className="w-1 h-1 rounded-full bg-white/40"></div>
                                     <div className="w-1 h-1 rounded-full bg-white/40"></div>
                                     <div className="w-1 h-1 rounded-full bg-white/40"></div>
                                 </div>
 
                                 {/* Cuerpo del cuaderno */}
-                                <div className={`ml-4 rounded-r-xl rounded-tl-sm overflow-hidden flex flex-col flex-1 border-t border-r border-b transition-all
+                                <div className={`ml-4 rounded-r-xl rounded-tl-sm overflow-hidden flex flex-col border-t border-r border-b transition-all
                                     ${darkMode ? 'border-gray-700 group-hover:border-cyan-500/60' : 'border-gray-300 group-hover:border-cyan-400/70'}`}
-                                    style={{ minHeight: "220px" }}
                                 >
                                     {/* Zona imagen / portada */}
-                                    <div className="relative flex-1 overflow-hidden" style={{ minHeight: "150px" }}>
+                                    <div className="relative overflow-hidden" style={{ height: "160px" }}>
                                         {cuaderno.fotoCuaderno ? (
                                             <img
                                                 src={cuaderno.fotoCuaderno}
                                                 alt={cuaderno.nombre}
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                style={{ minHeight: "150px" }}
                                             />
                                         ) : (
-                                            <div className={`w-full h-full flex flex-col items-center justify-center gap-2 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}
-                                                style={{ minHeight: "150px" }}>
+                                            <div className={`w-full h-full flex flex-col items-center justify-center gap-2 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                                                 {/* Líneas de papel decorativas */}
                                                 <div className="w-full px-4 flex flex-col gap-2 opacity-30">
                                                     {[...Array(5)].map((_, i) => (
