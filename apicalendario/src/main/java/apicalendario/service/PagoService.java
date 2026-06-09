@@ -3,14 +3,14 @@ package apicalendario.service;
 import apicalendario.model.EstadoSuscripcion;
 import apicalendario.repository.UsuarioRepository;
 import com.mercadopago.MercadoPagoConfig;
+import lombok.RequiredArgsConstructor;
 import com.mercadopago.client.preapproval.PreapprovalClient;
 import com.mercadopago.resources.preapproval.Preapproval;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class PagoService {
 
     private final UsuarioRepository usuarioRepo;
